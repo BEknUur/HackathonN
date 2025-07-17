@@ -9,7 +9,6 @@ from typing import List, Tuple, Optional
 # Импорт игр
 import sleep_game
 import runner_game
-import quiz_game
 
 import tetris_game
 
@@ -319,9 +318,8 @@ class MainMenu:
         self.menu_items = [
             MenuItem("Wake Up", sleep_game, 260, ),
             MenuItem("Deadline Dash", runner_game, 310, ),
-            MenuItem("Mentor Quiz", quiz_game, 360, ),
-            MenuItem("nFactorial Tetris", tetris_game, 410, ),
-            MenuItem("Exit", None, 460, )
+            MenuItem("nFactorial Tetris", tetris_game, 360, ),
+            MenuItem("Exit", None, 410, )
         ]
         self.selected_index = 0
         self.menu_items[0].selected = True
