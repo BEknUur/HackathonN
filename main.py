@@ -10,7 +10,7 @@ from typing import List, Tuple, Optional
 import sleep_game
 import runner_game
 import quiz_game
-import incubator_game
+
 import tetris_game
 
 # Инициализация
@@ -77,10 +77,10 @@ def load_resources():
         subtitle_font = pygame.font.Font(dogica_path, 28)   # Было 20
         info_font = pygame.font.Font(dogica_path, 22)       # Было 16
     except:
-        title_font = pygame.font.Font(None, 96)       # Было 80
-        menu_font = pygame.font.Font(None, 48)        # Было 38
-        subtitle_font = pygame.font.Font(None, 32)    # Было 24
-        info_font = pygame.font.Font(None, 28)        # Было 20
+        title_font = pygame.font.Font(None, 96)       
+        menu_font = pygame.font.Font(None, 48)        
+        subtitle_font = pygame.font.Font(None, 32)    
+        info_font = pygame.font.Font(None, 28)        
 
 # Система частиц
 class Particle:
@@ -320,9 +320,8 @@ class MainMenu:
             MenuItem("Wake Up", sleep_game, 260, ),
             MenuItem("Deadline Dash", runner_game, 310, ),
             MenuItem("Mentor Quiz", quiz_game, 360, ),
-            MenuItem("Incubator Journey", incubator_game, 410, ),
-            MenuItem("nFactorial Tetris", tetris_game, 460, ),
-            MenuItem("Exit", None, 510, )
+            MenuItem("nFactorial Tetris", tetris_game, 410, ),
+            MenuItem("Exit", None, 460, )
         ]
         self.selected_index = 0
         self.menu_items[0].selected = True

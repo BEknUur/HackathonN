@@ -10,7 +10,7 @@ icon = pygame.image.load(f"{path}/assets/kelgenbayev/t1.png")
 pygame.display.set_icon(icon)
 
 
-def main(i, j, a, b, title):
+def main(i, j, title, a=5000, b=12000):
     # sound settings
     f = f"{path}/assets/mp3/"
     cool_songs = [f"{f}c418_lullaby.mp3", f"{f}c418_sweden.mp3", f"{f}c418_wet.mp3",
@@ -78,7 +78,7 @@ def main(i, j, a, b, title):
     # for user event
     (mouse_x, mouse_y) = pygame.mouse.get_pos()
     inc_speed = pygame.USEREVENT + 1
-    pygame.time.set_timer(inc_speed, 20000)
+    pygame.time.set_timer(inc_speed, 10000)
 
     T = pygame.time.get_ticks() # pygame's time continues moving on from pygame.init(), so to reset it we have to get it's current ellapsed time
     next_frame = pygame.time.get_ticks() # for teacher's animation

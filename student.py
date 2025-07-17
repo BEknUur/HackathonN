@@ -35,7 +35,7 @@ class Student(pygame.sprite.Sprite):
         now = pygame.time.get_ticks()
         if now >= self.next_time and self.energy > 0:
             self.next_time += self.energy_speed
-            self.energy -= 25
+            self.energy -= 35
         if self.energy > 50:
             self.image = pygame.image.load(students[self.i][0]); self.status = 'awake'
         elif self.energy > 0:

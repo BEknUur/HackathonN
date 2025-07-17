@@ -6,7 +6,7 @@ import os
 
 path = pathlib.Path(__file__).parent.resolve()
 
-def main(window, i=4, j=6, a=15000, b=33000, title='Nurqisa oyan!'):
+def main(window, i=4, j=6, a=5000, b=12000, title='Nurqisa oyan!'):
     """
     Wake‑Up game.
     window  — pygame.Surface из main.py
@@ -69,7 +69,7 @@ def main(window, i=4, j=6, a=15000, b=33000, title='Nurqisa oyan!'):
 
     # speed‑up event
     INC_SPEED = pygame.USEREVENT + 1
-    pygame.time.set_timer(INC_SPEED, 20000)
+    pygame.time.set_timer(INC_SPEED, 10000)
 
     level_start = pygame.time.get_ticks()
 
@@ -101,13 +101,13 @@ def main(window, i=4, j=6, a=15000, b=33000, title='Nurqisa oyan!'):
         slept = total - len(awake_ids)
         elapsed = (pygame.time.get_ticks() - level_start) // 1000
         window.blit(font.render(f"Sleeping: {slept}", True, (0,0,0)), (540,100))
-        window.blit(font.render(f"Level: {title}", True, (0,0,0)), (540,140))
+        window.blit(font.render(f"Level:{title}", True, (0,0,0)), (540,140))
         window.blit(font.render(f"Time: {elapsed}", True, (0,0,0)), (540,180))
 
         # — teacher animate (41 кадр)
         now = pygame.time.get_ticks()
         if now >= next_frame:
-            next_frame += 600
+            next_frame += 100
             frame_idx = (frame_idx + 1) % num_frames
         filename = f"t{frame_idx+1}.png"
         teacher_img = pygame.image.load(str(teach_dir / filename))
@@ -124,7 +124,7 @@ def main(window, i=4, j=6, a=15000, b=33000, title='Nurqisa oyan!'):
             return False
 
         # — level success?
-        if elapsed >= 120:
+        if elapsed >= 30:
             window.fill((0,0,0))
             window.blit(img_success, (0,0))
             fx_success.play()
