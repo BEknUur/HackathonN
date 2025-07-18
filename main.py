@@ -9,8 +9,8 @@ from typing import List, Tuple, Optional
 # Импорт игр
 import sleep_game
 import runner_game
-
 import tetris_game
+import ceo
 
 # Инициализация
 pygame.init()
@@ -319,7 +319,8 @@ class MainMenu:
             MenuItem("Wake Up", sleep_game, 260, ),
             MenuItem("Deadline Dash", runner_game, 310, ),
             MenuItem("nFactorial Tetris", tetris_game, 360, ),
-            MenuItem("Exit", None, 410, )
+            MenuItem("CEO Game", ceo_game, 410, ),
+            MenuItem("Exit", None, 460, )
         ]
         self.selected_index = 0
         self.menu_items[0].selected = True
@@ -501,6 +502,24 @@ def main():
     
     pygame.quit()
     sys.exit()
+
+# Функция-обертка для CEO Game
+class CEOGameWrapper:
+    def __init__(self):
+        pass
+    
+    def main(self, window):
+        """Запуск CEO Game"""
+        try:
+            from ceo import Game
+            game = Game()
+            game.run()
+            return True
+        except Exception as e:
+            print(f"Ошибка при запуске CEO Game: {e}")
+            return False
+
+ceo_game = CEOGameWrapper()
 
 if __name__ == "__main__":
     main()
