@@ -57,6 +57,19 @@ def main(window):
         font_large = pygame.font.Font(None, 28)
         font_huge = pygame.font.Font(None, 40)
     
+    # Загрузка фото участницы
+    try:
+        diana_photo = pygame.image.load(str(base / "assets" / "diana.png")).convert_alpha()
+        # Масштабируем фото для красивого отображения
+        diana_photo = pygame.transform.smoothscale(diana_photo, (120, 160))
+    except:
+        # Создаем заглушку если фото не найдено
+        diana_photo = pygame.Surface((120, 160), pygame.SRCALPHA)
+        pygame.draw.rect(diana_photo, NFACT_BLUE, (0, 0, 120, 160))
+        pygame.draw.rect(diana_photo, WHITE, (10, 10, 100, 140))
+        placeholder_text = font_small.render("Diana", True, NFACT_BLUE)
+        diana_photo.blit(placeholder_text, (40, 80))
+    
     # Тетрис фигуры с nFactorial тематикой
     TETRIS_SHAPES = {
         'I': {
@@ -158,6 +171,14 @@ def main(window):
             
             # Текст "TETRIS!"
             self.particles.append(Particle(grid_center_x, grid_center_y, GOLD, "TETRIS!"))
+            
+            # Специальный эффект для фото участницы
+            photo_x = W - 150
+            photo_y = H - 200
+            for _ in range(10):
+                x = photo_x + random.randint(0, 140)
+                y = photo_y + random.randint(0, 180)
+                self.particles.append(Particle(x, y, GOLD, "Diana!"))
         
         def update(self):
             self.particles = [p for p in self.particles if p.life > 0]
@@ -446,6 +467,253 @@ def main(window):
                 control_surface = font_small.render(control, True, LIGHT_GRAY)
                 surface.blit(control_surface, (next_x, controls_y + 30 + i * 18))
     
+    def draw_champion_photo(surface, game_state):
+        """Отображение фото лучшей участницы с улучшенным дизайном"""
+        photo_x = W - 180
+        photo_y = H - 280
+        
+        # Размеры фрейма
+        frame_width = 160
+        frame_height = 220
+        
+        # Анимация пульсации для рамки
+        time_factor = pygame.time.get_ticks() * 0.003
+        pulse = math.sin(time_factor) * 0.2 + 1.0
+        glow_intensity = int(math.sin(time_factor * 2) * 30 + 50)
+        
+        # Многослойная рамка с градиентом
+        # Внешний светящийся контур
+        glow_size = int(8 * pulse)
+        for i in range(glow_size):
+            alpha = int((glow_size - i) * 15)
+            glow_color = (*GOLD, alpha)
+            glow_surface = pygame.Surface((frame_width + i*2, frame_height + i*2), pygame.SRCALPHA)
+            glow_surface.fill(glow_color)
+            surface.blit(glow_surface, (photo_x - glow_size + i, photo_y - glow_size + i))
+        
+        # Декоративная внешняя рамка с градиентом
+        outer_frame = pygame.Rect(photo_x - 8, photo_y - 8, frame_width + 16, frame_height + 16)
+        
+        # Рисуем градиентную рамку
+        for i in range(8):
+            color_ratio = i / 8
+            r = int(GOLD[0] * color_ratio + NFACT_ORANGE[0] * (1 - color_ratio))
+            g = int(GOLD[1] * color_ratio + NFACT_ORANGE[1] * (1 - color_ratio))
+            b = int(GOLD[2] * color_ratio + NFACT_ORANGE[2] * (1 - color_ratio))
+            
+            frame_rect = pygame.Rect(photo_x - 8 + i, photo_y - 8 + i, 
+                                    frame_width + 16 - i*2, frame_height + 16 - i*2)
+            pygame.draw.rect(surface, (r, g, b), frame_rect, 1)
+        
+        # Внутренняя темная рамка
+        inner_frame = pygame.Rect(photo_x - 2, photo_y - 2, frame_width + 4, frame_height + 4)
+        pygame.draw.rect(surface, DARK_BG, inner_frame)
+        pygame.draw.rect(surface, NFACT_BLUE, inner_frame, 2)
+        
+        # Фото участницы (увеличенное)
+        diana_photo_large = pygame.transform.smoothscale(diana_photo, (frame_width, int(frame_height * 0.75)))
+        surface.blit(diana_photo_large, (photo_x, photo_y))
+        
+        # Красивый фон для текста с градиентом
+        text_bg_height = 80
+        text_bg_y = photo_y + int(frame_height * 0.75)
+        
+        # Создаем градиентный фон для текста
+        text_bg_surface = pygame.Surface((frame_width, text_bg_height))
+        for y in range(text_bg_height):
+            ratio = y / text_bg_height
+            r = int(NFACT_BLUE[0] * (1 - ratio) + DARK_BG[0] * ratio)
+            g = int(NFACT_BLUE[1] * (1 - ratio) + DARK_BG[1] * ratio)
+            b = int(NFACT_BLUE[2] * (1 - ratio) + DARK_BG[2] * ratio)
+            pygame.draw.line(text_bg_surface, (r, g, b), (0, y), (frame_width, y))
+        
+        surface.blit(text_bg_surface, (photo_x, text_bg_y))
+        
+        # Декоративная линия-разделитель
+        pygame.draw.line(surface, GOLD, (photo_x, text_bg_y), (photo_x + frame_width, text_bg_y), 2)
+        
+        # Текст с тенью и свечением
+        text_lines = [
+            ("Самая сильная", GOLD, font_medium),
+            ("участница", NFACT_GREEN, font_medium),
+            ("ТЕТРИС", NFACT_ORANGE, font_large)
+        ]
+        
+        current_y = text_bg_y + 10
+        
+        for text, color, font in text_lines:
+            # Тень текста
+            shadow_surface = font.render(text, True, BLACK)
+            shadow_rect = shadow_surface.get_rect(center=(photo_x + frame_width//2 + 2, current_y + 2))
+            surface.blit(shadow_surface, shadow_rect)
+            
+            # Основной текст
+            text_surface = font.render(text, True, color)
+            text_rect = text_surface.get_rect(center=(photo_x + frame_width//2, current_y))
+            surface.blit(text_surface, text_rect)
+            
+            # Добавляем свечение для слова "ТЕТРИС"
+            if text == "ТЕТРИС":
+                for offset in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+                    glow_surface = font.render(text, True, (*color, 100))
+                    glow_rect = glow_surface.get_rect(center=(photo_x + frame_width//2 + offset[0], 
+                                                             current_y + offset[1]))
+                    surface.blit(glow_surface, glow_rect)
+            
+            current_y += 20 if font == font_medium else 25
+        
+        # Декоративные элементы по углам
+        corner_size = 20
+        corner_positions = [
+            (photo_x - 10, photo_y - 10),  # Верхний левый
+            (photo_x + frame_width - 10, photo_y - 10),  # Верхний правый
+            (photo_x - 10, photo_y + frame_height - 10),  # Нижний левый
+            (photo_x + frame_width - 10, photo_y + frame_height - 10)  # Нижний правый
+        ]
+        
+        for i, (corner_x, corner_y) in enumerate(corner_positions):
+            # Анимированные звезды
+            rotation = (pygame.time.get_ticks() * 0.002 + i * math.pi/2) % (2 * math.pi)
+            
+            # Рисуем звезду
+            star_points = []
+            for j in range(8):  # 8-конечная звезда
+                angle = j * math.pi / 4 + rotation
+                if j % 2 == 0:
+                    radius = corner_size // 2
+                    color = GOLD
+                else:
+                    radius = corner_size // 4
+                    color = NFACT_ORANGE
+                
+                point_x = corner_x + math.cos(angle) * radius
+                point_y = corner_y + math.sin(angle) * radius
+                star_points.append((point_x, point_y))
+            
+            # Рисуем звезду с чередованием цветов
+            for j in range(0, len(star_points), 2):
+                if j + 2 < len(star_points):
+                    pygame.draw.polygon(surface, GOLD, [
+                        (corner_x, corner_y),
+                        star_points[j],
+                        star_points[j + 1]
+                    ])
+        
+        # Специальные эффекты при высоком счете
+        if game_state.score > 500:
+            # Корона над фото
+            crown_y = photo_y - 35
+            crown_x = photo_x + frame_width // 2
+            
+            # Основа короны
+            crown_base = pygame.Rect(crown_x - 30, crown_y + 15, 60, 10)
+            pygame.draw.rect(surface, GOLD, crown_base)
+            
+            # Зубцы короны
+            crown_points = [
+                (crown_x - 25, crown_y + 15),
+                (crown_x - 20, crown_y),
+                (crown_x - 10, crown_y + 10),
+                (crown_x, crown_y - 5),
+                (crown_x + 10, crown_y + 10),
+                (crown_x + 20, crown_y),
+                (crown_x + 25, crown_y + 15)
+            ]
+            pygame.draw.polygon(surface, GOLD, crown_points)
+            
+            # Драгоценные камни на короне
+            gem_positions = [(crown_x - 15, crown_y + 8), (crown_x, crown_y + 3), (crown_x + 15, crown_y + 8)]
+            gem_colors = [NFACT_RED, NFACT_GREEN, NFACT_BLUE]
+            
+            for pos, color in zip(gem_positions, gem_colors):
+                pygame.draw.circle(surface, color, pos, 3)
+                pygame.draw.circle(surface, WHITE, pos, 3, 1)
+        
+        if game_state.score > 1000:
+            # Текст "CHAMPION!" с анимацией
+            champion_text = font_large.render("CHAMPION!", True, NFACT_GREEN)
+            champion_y = photo_y - 60
+            
+            # Анимация подпрыгивания
+            bounce = math.sin(pygame.time.get_ticks() * 0.01) * 5
+            champion_rect = champion_text.get_rect(center=(photo_x + frame_width//2, champion_y + bounce))
+            
+            # Тень для текста
+            shadow_text = font_large.render("CHAMPION!", True, BLACK)
+            shadow_rect = shadow_text.get_rect(center=(photo_x + frame_width//2 + 2, champion_y + bounce + 2))
+            surface.blit(shadow_text, shadow_rect)
+            
+            surface.blit(champion_text, champion_rect)
+            
+            # Конфетти вокруг
+            for i in range(10):
+                confetti_x = photo_x + random.randint(-20, frame_width + 20)
+                confetti_y = photo_y + random.randint(-40, frame_height + 40)
+                confetti_color = random.choice([GOLD, NFACT_GREEN, NFACT_ORANGE, NFACT_BLUE])
+                
+                # Анимированное конфетти
+                offset = math.sin(pygame.time.get_ticks() * 0.01 + i) * 3
+                pygame.draw.rect(surface, confetti_color, 
+                               (confetti_x + offset, confetti_y, 4, 8))
+        
+        if game_state.score > 2000:
+            # Радуга вокруг фото
+            rainbow_colors = [
+                (255, 0, 0),    # Красный
+                (255, 127, 0),  # Оранжевый
+                (255, 255, 0),  # Желтый
+                (0, 255, 0),    # Зеленый
+                (0, 0, 255),    # Синий
+                (75, 0, 130),   # Индиго
+                (148, 0, 211)   # Фиолетовый
+            ]
+            
+            for i, color in enumerate(rainbow_colors):
+                rainbow_rect = pygame.Rect(photo_x - 15 - i*2, photo_y - 15 - i*2, 
+                                         frame_width + 30 + i*4, frame_height + 30 + i*4)
+                pygame.draw.rect(surface, color, rainbow_rect, 2)
+        
+        # Статистика рядом с фото
+        stats_x = photo_x - 120
+        stats_y = photo_y + 50
+        
+        # Фон для статистики
+        stats_bg = pygame.Surface((100, 120), pygame.SRCALPHA)
+        stats_bg.fill((0, 0, 0, 150))
+        surface.blit(stats_bg, (stats_x, stats_y))
+        
+        # Рамка для статистики
+        pygame.draw.rect(surface, NFACT_BLUE, (stats_x, stats_y, 100, 120), 2)
+        
+        # Заголовок статистики
+        stats_title = font_small.render("Достижения:", True, GOLD)
+        surface.blit(stats_title, (stats_x + 5, stats_y + 5))
+        
+        # Статистика
+        achievements = [
+            f"Очки: {game_state.score}",
+            f"Линии: {game_state.lines_cleared}",
+            f"Уровень: {game_state.level}",
+            f"Тетрисы: {game_state.tetrises}"
+        ]
+        
+        for i, achievement in enumerate(achievements):
+            color = NFACT_GREEN if i == 0 and game_state.score > 1000 else WHITE
+            ach_text = font_small.render(achievement, True, color)
+            surface.blit(ach_text, (stats_x + 5, stats_y + 25 + i * 18))
+        
+        # Специальные бейджи
+        badge_y = stats_y + 100
+        if game_state.score > 500:
+            badge_text = font_small.render("⭐ Новичок", True, GOLD)
+            surface.blit(badge_text, (stats_x + 5, badge_y))
+        if game_state.score > 1000:
+            badge_text = font_small.render("👑 Мастер", True, GOLD)
+            surface.blit(badge_text, (stats_x + 5, badge_y + 15))
+        if game_state.score > 2000:
+            badge_text = font_small.render("🏆 Легенда", True, GOLD)
+            surface.blit(badge_text, (stats_x + 5, badge_y + 30))
+    
     # Инициализация
     game_state = GameState()
     particle_system = ParticleSystem()
@@ -514,6 +782,7 @@ def main(window):
         # Отрисовка
         draw_gradient_background(window)
         draw_title(window)
+        draw_champion_photo(window, game_state)
         
         # Игровое поле
         game_state.draw_grid(window)
@@ -576,3 +845,11 @@ def main(window):
         clock.tick(60)
     
     return False
+
+
+# Главная функция для запуска игры
+if __name__ == "__main__":
+    pygame.init()
+    screen = pygame.display.set_mode((1200, 800))
+    main(screen)
+    pygame.quit()
