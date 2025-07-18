@@ -24,10 +24,19 @@ class LectureRoomScene(BaseScene):
             {'x': self.screen_width * 0.8 + 160, 'y': self.screen_height * 0.2 + 60, 'speed': 5, 'strategy': 'left', 'knocked_back': False, 'knockback_timer': 0}
         ]
         
+        # Статичный персонаж Армансу (не отлетает от ударов)
+        self.armansu = {
+            'x': self.screen_width * 0.1,  # Левая сторона экрана
+            'y': self.screen_height * 0.3,  # Средняя высота
+            'speed': 8,  # Высокая скорость движения
+            'static': False  # Теперь он движется
+        }
+        
         # Загрузка изображений
         self.ceo_image = None
         self.lecture_343_image = None
         self.npc_images = []
+        self.armansu_image = None
         self.load_images()
         
     def load_images(self):
@@ -50,6 +59,15 @@ class LectureRoomScene(BaseScene):
                     placeholder = pygame.Surface((300, 420))  # Увеличили размер заглушки
                     placeholder.fill((150, 100, 200))
                     self.npc_images.append(placeholder)
+            
+            # Загрузка изображения Армансу
+            try:
+                self.armansu_image = pygame.image.load(os.path.join('public', 'armansu.png'))
+                self.armansu_image = pygame.transform.scale(self.armansu_image, (300, 420))
+            except pygame.error:
+                # Создаем заглушку для Армансу
+                self.armansu_image = pygame.Surface((300, 420))
+                self.armansu_image.fill((100, 100, 100))  # Серый цвет для Армансу
                     
         except pygame.error as e:
             print(f"Ошибка загрузки изображений: {e}")
@@ -81,6 +99,14 @@ class LectureRoomScene(BaseScene):
             {'x': self.screen_width * 0.8 + 80, 'y': self.screen_height * 0.2 + 30, 'speed': 4, 'strategy': 'right', 'knocked_back': False, 'knockback_timer': 0},
             {'x': self.screen_width * 0.8 + 160, 'y': self.screen_height * 0.2 + 60, 'speed': 5, 'strategy': 'left', 'knocked_back': False, 'knockback_timer': 0}
         ]
+        
+        # Сброс позиции Армансу
+        self.armansu = {
+            'x': self.screen_width * 0.1,
+            'y': self.screen_height * 0.3,
+            'speed': 8,
+            'static': False
+        }
     
     def handle_event(self, event):
         pass
@@ -114,6 +140,31 @@ class LectureRoomScene(BaseScene):
             # Проверка столкновения с игроком (точный радиус действия)
             player_rect = pygame.Rect(self.player_x - 125, self.player_y - 175, 250, 350)
             npc_rect = pygame.Rect(npc['x'] - 150, npc['y'] - 210, 300, 420)  # Точный радиус для NPC
+            
+            # Проверка столкновения Армансу с другими NPC (защита игрока)
+            armansu_rect = pygame.Rect(self.armansu['x'] - 150, self.armansu['y'] - 210, 300, 420)
+            
+            if armansu_rect.colliderect(npc_rect) and not npc['knocked_back']:
+                # Армансу отталкивает других NPC
+                npc['knocked_back'] = True
+                npc['knockback_timer'] = 60  # 1 секунда при 60 FPS
+                
+                # Направление отлета от Армансу
+                dx = npc['x'] - self.armansu['x']
+                dy = npc['y'] - self.armansu['y']
+                distance = math.sqrt(dx * dx + dy * dy)
+                if distance > 0:
+                    npc['knockback_dx'] = (dx / distance) * 20
+                    npc['knockback_dy'] = (dy / distance) * 20
+                else:
+                    npc['knockback_dx'] = 15
+                    npc['knockback_dy'] = -15
+                
+                # Армансу молча защищает (без диалога)
+                # if not self.dialog_active:
+                #     self.dialog_active = True
+                #     self.dialog_timer = 90  # 1.5 секунды
+                #     self.current_dialog = "Армансу: Защищаю тебя! 💪"
             
             if player_rect.colliderect(npc_rect) and not npc['knocked_back']:
                 # NPC касается игрока - улетает в сторону
@@ -185,6 +236,53 @@ class LectureRoomScene(BaseScene):
             npc['x'] = max(150, min(self.screen_width - 150, npc['x']))  # Точные границы
             npc['y'] = max(210, min(self.screen_height - 210, npc['y']))  # Точные границы
         
+        # Проверка столкновения с Армансу (без отлета)
+        player_rect = pygame.Rect(self.player_x - 125, self.player_y - 175, 250, 350)
+        armansu_rect = pygame.Rect(self.armansu['x'] - 150, self.armansu['y'] - 210, 300, 420)
+        
+        if player_rect.colliderect(armansu_rect) and not self.dialog_active:
+            # Армансу молча защищает игрока (без диалога)
+            pass
+        else:
+            # Движение Армансу - патрулирование вокруг игрока
+            # Находим ближайшего врага
+            nearest_enemy = None
+            min_distance = float('inf')
+            
+            for npc in self.npcs:
+                if not npc['knocked_back']:
+                    dx = npc['x'] - self.player_x
+                    dy = npc['y'] - self.player_y
+                    distance = math.sqrt(dx * dx + dy * dy)
+                    if distance < min_distance:
+                        min_distance = distance
+                        nearest_enemy = npc
+            
+            if nearest_enemy and min_distance < 400:  # Если враг близко к игроку
+                # Армансу летит к врагу для защиты
+                target_x = nearest_enemy['x']
+                target_y = nearest_enemy['y']
+            else:
+                # Патрулирование вокруг игрока
+                patrol_radius = 150
+                patrol_angle = (pygame.time.get_ticks() / 1000) * 0.5  # Медленное вращение
+                target_x = self.player_x + math.cos(patrol_angle) * patrol_radius
+                target_y = self.player_y + math.sin(patrol_angle) * patrol_radius
+            
+            # Направление к цели
+            dx = target_x - self.armansu['x']
+            dy = target_y - self.armansu['y']
+            
+            # Нормализация вектора
+            distance = math.sqrt(dx * dx + dy * dy)
+            if distance > 0:
+                self.armansu['x'] += (dx / distance) * self.armansu['speed']
+                self.armansu['y'] += (dy / distance) * self.armansu['speed']
+            
+            # Ограничение движения Армансу
+            self.armansu['x'] = max(150, min(self.screen_width - 150, self.armansu['x']))
+            self.armansu['y'] = max(210, min(self.screen_height - 210, self.armansu['y']))
+        
         # Проверка пересечения с дверью
         player_rect = pygame.Rect(self.player_x - 125, self.player_y - 175, 250, 350)
         if player_rect.colliderect(self.door_rect):
@@ -240,6 +338,13 @@ class LectureRoomScene(BaseScene):
             else:
                 pygame.draw.rect(screen, (150, 100, 200), 
                                (npc['x'] - 150, npc['y'] - 210, 300, 420))  # Обновили размеры отрисовки
+        
+        # Отрисовка Армансу (статичный персонаж)
+        if self.armansu_image:
+            screen.blit(self.armansu_image, (self.armansu['x'] - 150, self.armansu['y'] - 210))
+        else:
+            pygame.draw.rect(screen, (100, 100, 100), 
+                           (self.armansu['x'] - 150, self.armansu['y'] - 210, 300, 420))
         
         # Текст на двери
         door_text = self.small_font.render('Войти в зал', True, (255, 255, 255))

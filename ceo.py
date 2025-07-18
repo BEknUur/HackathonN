@@ -46,25 +46,42 @@ class Game:
             previous_scene = self.scene_history.pop()
             self.current_scene = previous_scene
             self.scenes[previous_scene].reset()
+        else:
+            # Если нет предыдущих сцен, выходим из игры
+            self.running = False
     
     def run(self):
         while self.running:
-            dt = self.clock.tick(60) / 1000.0
-            
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    self.running = False
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
-                        # Возврат в главное меню при нажатии ESC
+            try:
+                dt = self.clock.tick(60) / 1000.0
+                
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
                         self.running = False
-                        return
-                self.scenes[self.current_scene].handle_event(event)
-            
-            self.scenes[self.current_scene].update(dt)
-            self.scenes[self.current_scene].draw(self.screen)
-            
-            pygame.display.flip()
+                    elif event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_ESCAPE:
+                            # Возврат к предыдущей сцене при нажатии ESC
+                            self.go_back()
+                    try:
+                        self.scenes[self.current_scene].handle_event(event)
+                    except Exception as e:
+                        print(f"Ошибка в handle_event: {e}")
+                
+                try:
+                    self.scenes[self.current_scene].update(dt)
+                except Exception as e:
+                    print(f"Ошибка в update: {e}")
+                
+                try:
+                    self.scenes[self.current_scene].draw(self.screen)
+                except Exception as e:
+                    print(f"Ошибка в draw: {e}")
+                
+                pygame.display.flip()
+                
+            except Exception as e:
+                print(f"Критическая ошибка в игровом цикле: {e}")
+                self.running = False
         
         pygame.quit()
         sys.exit()

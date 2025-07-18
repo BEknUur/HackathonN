@@ -26,7 +26,7 @@ class BaseScene:
         
     def draw_esc_hint(self, screen):
         """Отрисовка подсказки о клавише ESC"""
-        esc_text = self.small_font.render('ESC - Вернуться в меню', True, (255, 255, 255))
+        esc_text = self.small_font.render('ESC - Вернуться назад', True, (255, 255, 255))
         # Добавляем полупрозрачный фон для лучшей читаемости
         text_rect = esc_text.get_rect()
         text_rect.bottomright = (self.screen_width - 10, self.screen_height - 10)
