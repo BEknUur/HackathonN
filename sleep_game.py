@@ -122,6 +122,11 @@ def main(window, i=4, j=6, a=5000, b=12000, title='Nurqisa oyan!'):
             if ev.type == pygame.QUIT:
                 pygame.quit()
                 return False
+            if ev.type == pygame.KEYDOWN:
+                if ev.key == pygame.K_ESCAPE:
+                    # Возврат в главное меню при нажатии ESC
+                    pygame.mixer.music.fadeout(500)
+                    return False
             if ev.type == INC_SPEED:
                 for s in student_sprites:
                     s.change_speed()
@@ -162,6 +167,14 @@ def main(window, i=4, j=6, a=5000, b=12000, title='Nurqisa oyan!'):
         
         game_info = font_small.render("Game by nFactorial", True, (200,200,200))
         window.blit(game_info, (540, 260))
+        
+        # Подсказка о клавише ESC
+        esc_hint = font_small.render("ESC - Вернуться в меню", True, (255, 255, 255))
+        # Создаем полупрозрачный фон для подсказки
+        hint_bg = pygame.Surface((200, 25), pygame.SRCALPHA)
+        hint_bg.fill((0, 0, 0, 128))
+        window.blit(hint_bg, (window.get_width() - 210, window.get_height() - 35))
+        window.blit(esc_hint, (window.get_width() - 205, window.get_height() - 30))
 
         # — Отображение фотографий как картины на стенах
         if photos:

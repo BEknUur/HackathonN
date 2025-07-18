@@ -797,6 +797,14 @@ def main(window):
         # Частицы
         particle_system.draw(window)
         
+        # Подсказка о клавише ESC
+        esc_hint = font_small.render("ESC - Вернуться в меню", True, WHITE)
+        # Создаем полупрозрачный фон для подсказки
+        hint_bg = pygame.Surface((200, 25), pygame.SRCALPHA)
+        hint_bg.fill((0, 0, 0, 128))
+        window.blit(hint_bg, (W - 210, H - 35))
+        window.blit(esc_hint, (W - 205, H - 30))
+        
         # Пауза
         if game_state.paused:
             pause_overlay = pygame.Surface((W, H), pygame.SRCALPHA)
