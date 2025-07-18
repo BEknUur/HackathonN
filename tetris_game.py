@@ -3,6 +3,7 @@ import random
 import math
 import time
 import pathlib
+import os
 from typing import List, Tuple, Optional
 
 def main(window):
@@ -11,6 +12,7 @@ def main(window):
     Соберите 3 блока за 30 секунд с фотографиями Дианы!
     """
     pygame.display.set_caption("Дитрис — Diana Edition")
+    pygame.mixer.init()  # Инициализация звуковой системы
     clock = pygame.time.Clock()
     W, H = window.get_size()
     
@@ -27,6 +29,68 @@ def main(window):
     PURPLE = (128, 0, 128)
     CYAN = (0, 255, 255)
     PINK = (255, 192, 203)
+    
+    # Музыка
+    music_playing = False
+    music_volume = 0.5
+    def load_music():
+        try:
+            base = pathlib.Path(__file__).parent.resolve()
+            music_path = base / "assets" / "mp3" / "detris.mp3"
+            if music_path.exists():
+                pygame.mixer.music.load(str(music_path))
+                pygame.mixer.music.set_volume(music_volume)
+                print(f"Музыка загружена: {music_path}")
+                return True
+            else:
+                print(f"Файл музыки не найден: {music_path}")
+                return False
+        except Exception as e:
+            print(f"Ошибка при загрузке музыки: {e}")
+            return False
+    def play_music():
+        nonlocal music_playing
+        try:
+            if not music_playing:
+                pygame.mixer.music.play(-1)
+                music_playing = True
+                print("Музыка Дитрис начала играть")
+        except Exception as e:
+            print(f"Ошибка при воспроизведении музыки: {e}")
+    def stop_music():
+        nonlocal music_playing
+        try:
+            pygame.mixer.music.stop()
+            music_playing = False
+            print("Музыка остановлена")
+        except Exception as e:
+            print(f"Ошибка при остановке музыки: {e}")
+    def pause_music():
+        nonlocal music_playing
+        try:
+            pygame.mixer.music.pause()
+            music_playing = False
+            print("Музыка поставлена на паузу")
+        except Exception as e:
+            print(f"Ошибка при паузе музыки: {e}")
+    def unpause_music():
+        nonlocal music_playing
+        try:
+            pygame.mixer.music.unpause()
+            music_playing = True
+            print("Музыка возобновлена")
+        except Exception as e:
+            print(f"Ошибка при возобновлении музыки: {e}")
+    def set_music_volume(volume):
+        nonlocal music_volume
+        try:
+            music_volume = max(0.0, min(1.0, volume))
+            pygame.mixer.music.set_volume(music_volume)
+            print(f"Громкость музыки установлена: {music_volume}")
+        except Exception as e:
+            print(f"Ошибка при установке громкости: {e}")
+    load_music()
+    play_music()
     
     # Настройки игрового поля
     GRID_WIDTH = 10
@@ -615,11 +679,22 @@ def main(window):
         # Обработка событий
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                stop_music()
                 return False
             
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
+                    stop_music()
                     return True
+                if event.key == pygame.K_m:
+                    if music_playing:
+                        pause_music()
+                    else:
+                        unpause_music()
+                elif event.key == pygame.K_PLUS or event.key == pygame.K_EQUALS:
+                    set_music_volume(music_volume + 0.1)
+                elif event.key == pygame.K_MINUS:
+                    set_music_volume(music_volume - 0.1)
                 
                 if not game_state.game_over and not game_state.game_won:
                     if event.key == pygame.K_LEFT:

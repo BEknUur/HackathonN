@@ -2,6 +2,7 @@ import pygame
 import random
 import pathlib
 import math
+import os
 from enum import Enum
 from typing import Dict, List, Tuple
 
@@ -12,6 +13,7 @@ def main(window):
     """
     # Инициализация
     pygame.display.set_caption("nFactorial Incubator Challenge")
+    pygame.mixer.init()  # Инициализация звуковой системы
     clock = pygame.time.Clock()
     W, H = window.get_size()
     GROUND_Y = int(H * 0.85)
@@ -24,6 +26,81 @@ def main(window):
     BLACK = (0, 0, 0)
     DARK_GRAY = (30, 30, 30)
     LIGHT_GRAY = (200, 200, 200)
+    
+    # Инициализация музыки
+    music_playing = False
+    music_volume = 0.4  # Немного тише для гонки
+    
+    def load_music():
+        """Загрузка музыки racer.mp3"""
+        try:
+            base = pathlib.Path(__file__).parent.resolve()
+            music_path = base / "assets" / "mp3" / "racer.mp3"
+            if music_path.exists():
+                pygame.mixer.music.load(str(music_path))
+                pygame.mixer.music.set_volume(music_volume)
+                print(f"Музыка загружена: {music_path}")
+                return True
+            else:
+                print(f"Файл музыки не найден: {music_path}")
+                return False
+        except Exception as e:
+            print(f"Ошибка при загрузке музыки: {e}")
+            return False
+    
+    def play_music():
+        """Воспроизведение музыки"""
+        nonlocal music_playing
+        try:
+            if not music_playing:
+                pygame.mixer.music.play(-1)  # -1 означает бесконечное воспроизведение
+                music_playing = True
+                print("Музыка гонки начала играть")
+        except Exception as e:
+            print(f"Ошибка при воспроизведении музыки: {e}")
+    
+    def stop_music():
+        """Остановка музыки"""
+        nonlocal music_playing
+        try:
+            pygame.mixer.music.stop()
+            music_playing = False
+            print("Музыка остановлена")
+        except Exception as e:
+            print(f"Ошибка при остановке музыки: {e}")
+    
+    def pause_music():
+        """Пауза музыки"""
+        nonlocal music_playing
+        try:
+            pygame.mixer.music.pause()
+            music_playing = False
+            print("Музыка поставлена на паузу")
+        except Exception as e:
+            print(f"Ошибка при паузе музыки: {e}")
+    
+    def unpause_music():
+        """Возобновление музыки"""
+        nonlocal music_playing
+        try:
+            pygame.mixer.music.unpause()
+            music_playing = True
+            print("Музыка возобновлена")
+        except Exception as e:
+            print(f"Ошибка при возобновлении музыки: {e}")
+    
+    def set_music_volume(volume):
+        """Установка громкости музыки (0.0 - 1.0)"""
+        nonlocal music_volume
+        try:
+            music_volume = max(0.0, min(1.0, volume))
+            pygame.mixer.music.set_volume(music_volume)
+            print(f"Громкость музыки установлена: {music_volume}")
+        except Exception as e:
+            print(f"Ошибка при установке громкости: {e}")
+    
+    # Загрузка музыки
+    load_music()
     
     # Загрузка ресурсов
     base = pathlib.Path(__file__).parent.resolve()
@@ -356,6 +433,11 @@ def main(window):
         # Скорость
         speed_text = font_small.render(f"Скорость: {game_speed}", True, WHITE)
         surface.blit(speed_text, (W - 150, 35))
+        
+        # Индикатор музыки
+        music_status = "🔊" if music_playing else "🔇"
+        music_text = font_small.render(f"Музыка: {music_status}", True, WHITE)
+        surface.blit(music_text, (W - 150, 55))
     
     def draw_lanes(surface):
         # Полосы движения
@@ -375,6 +457,9 @@ def main(window):
             pygame.draw.line(surface, WHITE, (lanes[i] + 30, GROUND_Y), (lanes[i] + 30, GROUND_Y - 10), 3)
     
     def show_victory_screen():
+        # Останавливаем музыку при победе
+        stop_music()
+        
         overlay = pygame.Surface((W, H), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 200))
         window.blit(overlay, (0, 0))
@@ -399,6 +484,9 @@ def main(window):
         return True
     
     def show_failure_screen():
+        # Останавливаем музыку при поражении
+        stop_music()
+        
         overlay = pygame.Surface((W, H), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 200))
         window.blit(overlay, (0, 0))
@@ -422,6 +510,9 @@ def main(window):
         pygame.time.wait(4000)
         return False
     
+    # Автоматически запускаем музыку при старте игры
+    play_music()
+    
     # Основной игровой цикл
     running = True
     dt = 0
@@ -432,10 +523,12 @@ def main(window):
         # Обработка событий
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                stop_music()
                 return False
             
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
+                    stop_music()
                     return True
                 elif event.key == pygame.K_LEFT or event.key == pygame.K_a:
                     player.move_left()
@@ -443,6 +536,18 @@ def main(window):
                     player.move_right()
                 elif event.key == pygame.K_SPACE or event.key == pygame.K_UP or event.key == pygame.K_w:
                     player.jump()
+                elif event.key == pygame.K_m:
+                    # Управление музыкой клавишей M
+                    if music_playing:
+                        pause_music()
+                    else:
+                        unpause_music()
+                elif event.key == pygame.K_PLUS or event.key == pygame.K_EQUALS:
+                    # Увеличение громкости
+                    set_music_volume(music_volume + 0.1)
+                elif event.key == pygame.K_MINUS:
+                    # Уменьшение громкости
+                    set_music_volume(music_volume - 0.1)
             
             elif event.type == OBSTACLE_EVENT:
                 obstacle = Obstacle(game_speed)
@@ -535,7 +640,7 @@ def main(window):
                 "Цель: Соберите 7 монет CEO для поступления в инкубатор",
                 "Избегайте Aselya! 3 столкновения = исключение",
                 "Управление: Стрелки/WASD - движение, SPACE/W - прыжок",
-                "ESC - выход в меню"
+                "M - пауза/возобновление музыки, +/- - громкость, ESC - выход"
             ]
             
             hint_bg = pygame.Surface((W, 80), pygame.SRCALPHA)
