@@ -7,10 +7,10 @@ from typing import List, Tuple, Optional
 
 def main(window):
     """
-    nFactorial Tetris - Code Block Edition
-    Собирай блоки кода в правильном порядке!
+    Дитрис - Diana Tetris Edition
+    Соберите 3 блока за 30 секунд с фотографиями Дианы!
     """
-    pygame.display.set_caption("nFactorial Tetris — Code Block Edition")
+    pygame.display.set_caption("Дитрис — Diana Edition")
     clock = pygame.time.Clock()
     W, H = window.get_size()
     
@@ -26,16 +26,63 @@ def main(window):
     GOLD = (255, 215, 0)
     PURPLE = (128, 0, 128)
     CYAN = (0, 255, 255)
+    PINK = (255, 192, 203)
     
     # Настройки игрового поля
     GRID_WIDTH = 10
-    GRID_HEIGHT = 20
-    BLOCK_SIZE = 30
+    GRID_HEIGHT = 15  # Уменьшили высоту для более быстрой игры
+    BLOCK_SIZE = 35   # Увеличили размер блоков
     GRID_X = W // 2 - (GRID_WIDTH * BLOCK_SIZE) // 2
-    GRID_Y = 50
+    GRID_Y = 80
+    
+    # Игровые настройки
+    GAME_TIME = 30  # 30 секунд
+    TARGET_LINES = 3  # Нужно собрать 3 линии
     
     # Загрузка ресурсов
     base = pathlib.Path(__file__).parent.resolve()
+    
+    # Загрузка фонового изображения аудитории
+    try:
+        classroom_bg = pygame.image.load(str(base / "assets" / "body.png")).convert()
+        classroom_bg = pygame.transform.scale(classroom_bg, (W, H))
+    except:
+        # Создаем заглушку аудитории
+        classroom_bg = pygame.Surface((W, H))
+        # Градиент как в аудитории
+        for y in range(H):
+            ratio = y / H
+            r = int(70 * (1 - ratio) + 120 * ratio)
+            g = int(90 * (1 - ratio) + 140 * ratio)
+            b = int(130 * (1 - ratio) + 180 * ratio)
+            pygame.draw.line(classroom_bg, (r, g, b), (0, y), (W, y))
+        
+        # Добавляем элементы аудитории
+        # Доска
+        pygame.draw.rect(classroom_bg, (40, 60, 40), (50, 50, 300, 150))
+        pygame.draw.rect(classroom_bg, WHITE, (50, 50, 300, 150), 3)
+        
+        # Столы
+        for i in range(3):
+            for j in range(4):
+                table_x = 100 + j * 150
+                table_y = 300 + i * 80
+                pygame.draw.rect(classroom_bg, (139, 69, 19), (table_x, table_y, 120, 60))
+    
+    # Загрузка фото Дианы
+    try:
+        diana_photo = pygame.image.load(str(base / "assets" / "diana.png")).convert_alpha()
+        # Масштабируем фото для блоков (увеличиваем)
+        diana_block = pygame.transform.smoothscale(diana_photo, (BLOCK_SIZE, BLOCK_SIZE))
+    except:
+        # Создаем заглушку Дианы (больше размер)
+        diana_block = pygame.Surface((BLOCK_SIZE, BLOCK_SIZE), pygame.SRCALPHA)
+        pygame.draw.circle(diana_block, PINK, (BLOCK_SIZE//2, BLOCK_SIZE//2), BLOCK_SIZE//2-2)
+        pygame.draw.circle(diana_block, WHITE, (BLOCK_SIZE//2, BLOCK_SIZE//2), BLOCK_SIZE//2-5)
+        font_small = pygame.font.Font(None, 16)
+        text = font_small.render("DIANA", True, PINK)
+        diana_block.blit(text, (BLOCK_SIZE//2-15, BLOCK_SIZE//2-8))
+    
     try:
         logo = pygame.image.load(str(base / "assets" / "logo.png")).convert_alpha()
         logo = pygame.transform.smoothscale(logo, (40, 40))
@@ -44,75 +91,40 @@ def main(window):
         pygame.draw.circle(logo, NFACT_BLUE, (20, 20), 18)
         pygame.draw.circle(logo, WHITE, (20, 20), 12)
     
-    # Шрифты
+    # Шрифты (увеличенные для лучшей читаемости)
     try:
         font_path = str(base / "assets" / "dogica.ttf")
-        font_small = pygame.font.Font(font_path, 12)
-        font_medium = pygame.font.Font(font_path, 16)
-        font_large = pygame.font.Font(font_path, 24)
-        font_huge = pygame.font.Font(font_path, 36)
+        font_small = pygame.font.Font(font_path, 16)    # Увеличили
+        font_medium = pygame.font.Font(font_path, 22)   # Увеличили
+        font_large = pygame.font.Font(font_path, 32)    # Увеличили
+        font_huge = pygame.font.Font(font_path, 48)     # Увеличили
     except:
-        font_small = pygame.font.Font(None, 16)
-        font_medium = pygame.font.Font(None, 20)
-        font_large = pygame.font.Font(None, 28)
-        font_huge = pygame.font.Font(None, 40)
+        font_small = pygame.font.Font(None, 20)
+        font_medium = pygame.font.Font(None, 26)
+        font_large = pygame.font.Font(None, 36)
+        font_huge = pygame.font.Font(None, 52)
     
-    # Загрузка фото участницы
-    try:
-        diana_photo = pygame.image.load(str(base / "assets" / "diana.png")).convert_alpha()
-        # Масштабируем фото для красивого отображения
-        diana_photo = pygame.transform.smoothscale(diana_photo, (120, 160))
-    except:
-        # Создаем заглушку если фото не найдено
-        diana_photo = pygame.Surface((120, 160), pygame.SRCALPHA)
-        pygame.draw.rect(diana_photo, NFACT_BLUE, (0, 0, 120, 160))
-        pygame.draw.rect(diana_photo, WHITE, (10, 10, 100, 140))
-        placeholder_text = font_small.render("Diana", True, NFACT_BLUE)
-        diana_photo.blit(placeholder_text, (40, 80))
-    
-    # Тетрис фигуры с nFactorial тематикой
-    TETRIS_SHAPES = {
+    # Дитрис фигуры (упрощенные для быстрой игры)
+    DIANA_SHAPES = {
         'I': {
             'blocks': [[(0, 1), (1, 1), (2, 1), (3, 1)]],
-            'color': NFACT_BLUE,
-            'name': 'def function():',
-            'icon': 'def'
+            'color': PINK,
+            'name': 'Diana Line'
         },
         'O': {
             'blocks': [[(0, 0), (1, 0), (0, 1), (1, 1)]],
-            'color': GOLD,
-            'name': 'class Object:',
-            'icon': '{}'
+            'color': NFACT_GREEN,
+            'name': 'Diana Square'
         },
         'T': {
             'blocks': [[(1, 0), (0, 1), (1, 1), (2, 1)]],
-            'color': PURPLE,
-            'name': 'try/except',
-            'icon': 'try'
-        },
-        'S': {
-            'blocks': [[(1, 0), (2, 0), (0, 1), (1, 1)]],
-            'color': NFACT_GREEN,
-            'name': 'if condition:',
-            'icon': 'if'
-        },
-        'Z': {
-            'blocks': [[(0, 0), (1, 0), (1, 1), (2, 1)]],
-            'color': NFACT_RED,
-            'name': 'for loop:',
-            'icon': 'for'
-        },
-        'J': {
-            'blocks': [[(0, 0), (0, 1), (1, 1), (2, 1)]],
             'color': NFACT_ORANGE,
-            'name': 'while True:',
-            'icon': 'while'
+            'name': 'Diana T'
         },
         'L': {
-            'blocks': [[(2, 0), (0, 1), (1, 1), (2, 1)]],
-            'color': CYAN,
-            'name': 'import module',
-            'icon': 'import'
+            'blocks': [[(0, 0), (0, 1), (0, 2), (1, 2)]],
+            'color': NFACT_BLUE,
+            'name': 'Diana L'
         }
     }
     
@@ -123,11 +135,11 @@ def main(window):
             self.y = y
             self.color = color
             self.text = text
-            self.vy = random.uniform(-3, -1)
-            self.vx = random.uniform(-1, 1)
-            self.life = 60
-            self.max_life = 60
-            self.size = random.randint(2, 5)
+            self.vy = random.uniform(-4, -1)
+            self.vx = random.uniform(-2, 2)
+            self.life = 80
+            self.max_life = 80
+            self.size = random.randint(3, 6)
         
         def update(self):
             self.x += self.vx
@@ -138,7 +150,10 @@ def main(window):
         def draw(self, surface):
             if self.life > 0:
                 if self.text:
-                    text_surface = font_small.render(self.text, True, self.color)
+                    # Тень для текста частиц
+                    text_shadow = font_medium.render(self.text, True, BLACK)
+                    surface.blit(text_shadow, (int(self.x) + 2, int(self.y) + 2))
+                    text_surface = font_medium.render(self.text, True, self.color)
                     surface.blit(text_surface, (int(self.x), int(self.y)))
                 else:
                     pygame.draw.circle(surface, self.color, (int(self.x), int(self.y)), self.size)
@@ -152,33 +167,25 @@ def main(window):
                 x = GRID_X + i * BLOCK_SIZE + BLOCK_SIZE // 2
                 y = GRID_Y + line_y * BLOCK_SIZE + BLOCK_SIZE // 2
                 
-                # Искры
-                for _ in range(3):
-                    self.particles.append(Particle(x, y, GOLD))
+                # Розовые искры для Дианы
+                for _ in range(5):
+                    self.particles.append(Particle(x, y, PINK))
                 
                 # Текстовые эффекты
-                if i % 3 == 0:
-                    effects = ["Bug Fixed!", "Clean Code!", "Refactored!"]
+                if i % 2 == 0:
+                    effects = ["Diana!", "Amazing!", "Perfect!"]
                     text = random.choice(effects)
-                    self.particles.append(Particle(x, y, NFACT_GREEN, text))
+                    self.particles.append(Particle(x, y, GOLD, text))
         
-        def add_tetris_effect(self, grid_center_x: int, grid_center_y: int):
-            # Эпичный эффект тетриса
-            for _ in range(20):
-                x = grid_center_x + random.randint(-100, 100)
-                y = grid_center_y + random.randint(-50, 50)
-                self.particles.append(Particle(x, y, random.choice([GOLD, NFACT_ORANGE, NFACT_GREEN])))
+        def add_diana_celebration(self, grid_center_x: int, grid_center_y: int):
+            # Эпичный эффект Дианы
+            for _ in range(30):
+                x = grid_center_x + random.randint(-150, 150)
+                y = grid_center_y + random.randint(-100, 100)
+                self.particles.append(Particle(x, y, random.choice([PINK, GOLD, NFACT_GREEN])))
             
-            # Текст "TETRIS!"
-            self.particles.append(Particle(grid_center_x, grid_center_y, GOLD, "TETRIS!"))
-            
-            # Специальный эффект для фото участницы
-            photo_x = W - 150
-            photo_y = H - 200
-            for _ in range(10):
-                x = photo_x + random.randint(0, 140)
-                y = photo_y + random.randint(0, 180)
-                self.particles.append(Particle(x, y, GOLD, "Diana!"))
+            # Специальный текст
+            self.particles.append(Particle(grid_center_x - 50, grid_center_y, GOLD, "DIANA POWER!"))
         
         def update(self):
             self.particles = [p for p in self.particles if p.life > 0]
@@ -189,31 +196,18 @@ def main(window):
             for particle in self.particles:
                 particle.draw(surface)
     
-    # Тетрис фигура
-    class Tetromino:
+    # Дитрис фигура
+    class DianaTetromino:
         def __init__(self, shape_type: str):
             self.shape_type = shape_type
-            self.shape_data = TETRIS_SHAPES[shape_type]
+            self.shape_data = DIANA_SHAPES[shape_type]
             self.color = self.shape_data['color']
             self.blocks = self.shape_data['blocks'][0].copy()
             self.x = GRID_WIDTH // 2 - 2
             self.y = 0
-            self.rotation = 0
         
-        def get_rotated_blocks(self):
-            # Поворот фигуры
-            rotated = []
+        def can_move(self, dx: int, dy: int, grid):
             for bx, by in self.blocks:
-                # Поворот на 90 градусов
-                new_x = -by
-                new_y = bx
-                rotated.append((new_x, new_y))
-            return rotated
-        
-        def can_move(self, dx: int, dy: int, grid, rotated_blocks=None):
-            blocks_to_check = rotated_blocks if rotated_blocks else self.blocks
-            
-            for bx, by in blocks_to_check:
                 new_x = self.x + bx + dx
                 new_y = self.y + by + dy
                 
@@ -234,61 +228,45 @@ def main(window):
                 return True
             return False
         
-        def rotate(self, grid):
-            rotated_blocks = self.get_rotated_blocks()
-            if self.can_move(0, 0, grid, rotated_blocks):
-                self.blocks = rotated_blocks
-                return True
-            return False
-        
-        def draw(self, surface, preview=False):
+        def draw(self, surface):
             for bx, by in self.blocks:
                 block_x = GRID_X + (self.x + bx) * BLOCK_SIZE
                 block_y = GRID_Y + (self.y + by) * BLOCK_SIZE
                 
-                if preview:
-                    # Превью с прозрачностью
-                    preview_surface = pygame.Surface((BLOCK_SIZE, BLOCK_SIZE), pygame.SRCALPHA)
-                    preview_surface.fill((*self.color, 100))
-                    surface.blit(preview_surface, (block_x, block_y))
-                else:
-                    # Обычный блок
-                    pygame.draw.rect(surface, self.color, (block_x, block_y, BLOCK_SIZE, BLOCK_SIZE))
-                    pygame.draw.rect(surface, WHITE, (block_x, block_y, BLOCK_SIZE, BLOCK_SIZE), 2)
-                    
-                    # Иконка кода
-                    icon = self.shape_data['icon']
-                    icon_surface = font_small.render(icon, True, BLACK)
-                    icon_rect = icon_surface.get_rect(center=(block_x + BLOCK_SIZE//2, block_y + BLOCK_SIZE//2))
-                    surface.blit(icon_surface, icon_rect)
+                # Рисуем фотографию Дианы как блок
+                surface.blit(diana_block, (block_x, block_y))
+                
+                # Добавляем рамку
+                pygame.draw.rect(surface, self.color, (block_x, block_y, BLOCK_SIZE, BLOCK_SIZE), 4)
+                
+                # Добавляем блеск
+                highlight = pygame.Surface((BLOCK_SIZE, BLOCK_SIZE), pygame.SRCALPHA)
+                highlight.fill((255, 255, 255, 80))
+                surface.blit(highlight, (block_x, block_y))
     
     # Игровое состояние
-    class GameState:
+    class DianaGameState:
         def __init__(self):
             self.grid = [[None for _ in range(GRID_WIDTH)] for _ in range(GRID_HEIGHT)]
             self.current_piece = None
-            self.next_piece = None
             self.score = 0
             self.lines_cleared = 0
-            self.level = 1
             self.fall_time = 0
-            self.fall_speed = 500  # миллисекунды
+            self.fall_speed = 800  # Медленнее для лучшего контроля
             self.game_over = False
+            self.game_won = False
             self.paused = False
             
-            # Статистика
-            self.pieces_placed = 0
-            self.tetrises = 0
-            self.combo = 0
+            # Таймер
+            self.start_time = pygame.time.get_ticks()
+            self.time_left = GAME_TIME
             
             self.spawn_piece()
         
         def spawn_piece(self):
-            if self.next_piece is None:
-                self.next_piece = Tetromino(random.choice(list(TETRIS_SHAPES.keys())))
-            
-            self.current_piece = self.next_piece
-            self.next_piece = Tetromino(random.choice(list(TETRIS_SHAPES.keys())))
+            # Случайно выбираем фигуру
+            shape = random.choice(list(DIANA_SHAPES.keys()))
+            self.current_piece = DianaTetromino(shape)
             
             # Проверка game over
             if not self.current_piece.can_move(0, 0, self.grid):
@@ -303,7 +281,6 @@ def main(window):
                 if 0 <= grid_x < GRID_WIDTH and 0 <= grid_y < GRID_HEIGHT:
                     self.grid[grid_y][grid_x] = self.current_piece.color
             
-            self.pieces_placed += 1
             self.check_lines()
             self.spawn_piece()
         
@@ -325,34 +302,28 @@ def main(window):
                 # Обновление счета
                 lines_count = len(lines_to_clear)
                 self.lines_cleared += lines_count
-                self.combo += 1
+                self.score += lines_count * 100
                 
-                # Очки за линии
-                line_scores = {1: 100, 2: 300, 3: 500, 4: 800}
-                base_score = line_scores.get(lines_count, 100)
-                combo_bonus = self.combo * 50
-                level_bonus = self.level * 10
-                
-                self.score += base_score + combo_bonus + level_bonus
-                
-                # Проверка тетриса
-                if lines_count == 4:
-                    self.tetrises += 1
-                    particle_system.add_tetris_effect(
+                # Проверка победы - нужно 3 линии
+                if self.lines_cleared >= TARGET_LINES:
+                    self.game_won = True
+                    particle_system.add_diana_celebration(
                         GRID_X + GRID_WIDTH * BLOCK_SIZE // 2,
                         GRID_Y + GRID_HEIGHT * BLOCK_SIZE // 2
                     )
-                
-                # Увеличение уровня
-                new_level = self.lines_cleared // 10 + 1
-                if new_level > self.level:
-                    self.level = new_level
-                    self.fall_speed = max(50, self.fall_speed - 50)
-            else:
-                self.combo = 0
         
         def update(self, dt: int):
-            if self.game_over or self.paused:
+            if self.game_over or self.game_won or self.paused:
+                return
+            
+            # Обновление таймера
+            current_time = pygame.time.get_ticks()
+            elapsed = (current_time - self.start_time) // 1000
+            self.time_left = max(0, GAME_TIME - elapsed)
+            
+            # Проверка времени
+            if self.time_left <= 0:
+                self.game_over = True
                 return
             
             self.fall_time += dt
@@ -363,376 +334,274 @@ def main(window):
                 self.fall_time = 0
         
         def draw_grid(self, surface):
+            # Полупрозрачная подложка для игрового поля
+            grid_bg = pygame.Surface((GRID_WIDTH * BLOCK_SIZE, GRID_HEIGHT * BLOCK_SIZE), pygame.SRCALPHA)
+            grid_bg.fill((0, 0, 0, 150))
+            surface.blit(grid_bg, (GRID_X, GRID_Y))
+            
             # Сетка
             for x in range(GRID_WIDTH + 1):
-                pygame.draw.line(surface, LIGHT_GRAY, 
+                pygame.draw.line(surface, WHITE, 
                                (GRID_X + x * BLOCK_SIZE, GRID_Y), 
-                               (GRID_X + x * BLOCK_SIZE, GRID_Y + GRID_HEIGHT * BLOCK_SIZE))
+                               (GRID_X + x * BLOCK_SIZE, GRID_Y + GRID_HEIGHT * BLOCK_SIZE), 2)
             
             for y in range(GRID_HEIGHT + 1):
-                pygame.draw.line(surface, LIGHT_GRAY, 
+                pygame.draw.line(surface, WHITE, 
                                (GRID_X, GRID_Y + y * BLOCK_SIZE), 
-                               (GRID_X + GRID_WIDTH * BLOCK_SIZE, GRID_Y + y * BLOCK_SIZE))
+                               (GRID_X + GRID_WIDTH * BLOCK_SIZE, GRID_Y + y * BLOCK_SIZE), 2)
             
-            # Размещенные блоки
+            # Размещенные блоки (фотографии Дианы)
             for y in range(GRID_HEIGHT):
                 for x in range(GRID_WIDTH):
                     if self.grid[y][x] is not None:
                         block_x = GRID_X + x * BLOCK_SIZE
                         block_y = GRID_Y + y * BLOCK_SIZE
                         
+                        # Рисуем фотографию Дианы
+                        surface.blit(diana_block, (block_x, block_y))
+                        
+                        # Рамка с цветом фигуры
                         pygame.draw.rect(surface, self.grid[y][x], 
-                                       (block_x, block_y, BLOCK_SIZE, BLOCK_SIZE))
-                        pygame.draw.rect(surface, WHITE, 
-                                       (block_x, block_y, BLOCK_SIZE, BLOCK_SIZE), 2)
+                                       (block_x, block_y, BLOCK_SIZE, BLOCK_SIZE), 4)
         
         def draw_ui(self, surface):
-            # Панель информации
-            info_x = 50
-            info_y = 100
+            # Основная информационная панель с улучшенной читаемостью
+            info_x = 30
+            info_y = 120
             
-            # Счет
-            score_text = font_medium.render(f"Score: {self.score}", True, WHITE)
-            surface.blit(score_text, (info_x, info_y))
+            # Большой контрастный фон для UI
+            ui_bg = pygame.Surface((300, 280), pygame.SRCALPHA)
+            ui_bg.fill((0, 0, 0, 240))  # Более темный фон
+            surface.blit(ui_bg, (info_x - 15, info_y - 15))
             
-            # Линии
-            lines_text = font_medium.render(f"Lines: {self.lines_cleared}", True, WHITE)
-            surface.blit(lines_text, (info_x, info_y + 30))
+            # Белая рамка для лучшей видимости
+            pygame.draw.rect(surface, WHITE, (info_x - 15, info_y - 15, 300, 280), 4)
             
-            # Уровень
-            level_text = font_medium.render(f"Level: {self.level}", True, WHITE)
-            surface.blit(level_text, (info_x, info_y + 60))
+            # Заголовок с большим шрифтом
+            title_text = font_large.render("DITRIS", True, PINK)
+            # Тень для заголовка
+            title_shadow = font_large.render("DITRIS", True, BLACK)
+            surface.blit(title_shadow, (info_x + 2, info_y - 48))
+            surface.blit(title_text, (info_x, info_y - 50))
             
-            # Комбо
-            if self.combo > 0:
-                combo_text = font_medium.render(f"Combo: {self.combo}", True, NFACT_ORANGE)
-                surface.blit(combo_text, (info_x, info_y + 90))
+            # Прогресс с контрастным фоном
+            progress_bg = pygame.Surface((270, 35), pygame.SRCALPHA)
+            progress_bg.fill((255, 255, 255, 240))  # Белый фон
+            surface.blit(progress_bg, (info_x, info_y - 5))
             
-            # Статистика
-            stats_y = info_y + 140
-            stats_text = [
-                f"Pieces: {self.pieces_placed}",
-                f"Tetrises: {self.tetrises}",
-                f"Speed: {1000//self.fall_speed:.1f}/s"
-            ]
+            progress_text = font_medium.render(f"Lines: {self.lines_cleared}/{TARGET_LINES}", True, BLACK)
+            surface.blit(progress_text, (info_x + 10, info_y + 5))
             
-            for i, stat in enumerate(stats_text):
-                stat_surface = font_small.render(stat, True, LIGHT_GRAY)
-                surface.blit(stat_surface, (info_x, stats_y + i * 20))
+            # Прогресс бар (увеличиваем)
+            progress_width = 260
+            progress_height = 30
+            progress_bg_rect = pygame.Rect(info_x, info_y + 40, progress_width, progress_height)
+            pygame.draw.rect(surface, WHITE, progress_bg_rect)
+            pygame.draw.rect(surface, BLACK, progress_bg_rect, 4)
             
-            # Следующая фигура
-            next_x = W - 200
-            next_y = 100
+            progress_fill = int((progress_width - 8) * (self.lines_cleared / TARGET_LINES))
+            if progress_fill > 0:
+                fill_rect = pygame.Rect(info_x + 4, info_y + 44, progress_fill, progress_height - 8)
+                pygame.draw.rect(surface, PINK, fill_rect)
             
-            next_title = font_medium.render("Next:", True, WHITE)
-            surface.blit(next_title, (next_x, next_y))
+            # Таймер с контрастным фоном
+            timer_bg = pygame.Surface((270, 35), pygame.SRCALPHA)
+            timer_color = (255, 200, 200) if self.time_left <= 10 else (255, 255, 255)
+            timer_bg.fill((*timer_color, 240))
+            surface.blit(timer_bg, (info_x, info_y + 80))
             
-            if self.next_piece:
-                # Фон для следующей фигуры
-                preview_bg = pygame.Rect(next_x, next_y + 30, 120, 120)
-                pygame.draw.rect(surface, (50, 50, 50), preview_bg)
-                pygame.draw.rect(surface, WHITE, preview_bg, 2)
-                
-                # Отрисовка следующей фигуры
-                temp_x = self.next_piece.x
-                temp_y = self.next_piece.y
-                
-                self.next_piece.x = (next_x - GRID_X) // BLOCK_SIZE + 1
-                self.next_piece.y = (next_y + 50 - GRID_Y) // BLOCK_SIZE + 1
-                
-                self.next_piece.draw(surface)
-                
-                self.next_piece.x = temp_x
-                self.next_piece.y = temp_y
-                
-                # Название фигуры
-                name_text = font_small.render(self.next_piece.shape_data['name'], True, self.next_piece.color)
-                surface.blit(name_text, (next_x, next_y + 160))
+            time_color = NFACT_RED if self.time_left <= 10 else BLACK
+            time_text = font_medium.render(f"Time: {self.time_left}s", True, time_color)
+            surface.blit(time_text, (info_x + 10, info_y + 90))
+            
+            # Таймер бар (увеличиваем)
+            timer_width = 260
+            timer_height = 25
+            timer_bg_rect = pygame.Rect(info_x, info_y + 125, timer_width, timer_height)
+            pygame.draw.rect(surface, WHITE, timer_bg_rect)
+            pygame.draw.rect(surface, BLACK, timer_bg_rect, 4)
+            
+            timer_fill = int((timer_width - 8) * (self.time_left / GAME_TIME))
+            if timer_fill > 0:
+                timer_bar_color = NFACT_RED if self.time_left <= 10 else NFACT_GREEN
+                fill_rect = pygame.Rect(info_x + 4, info_y + 129, timer_fill, timer_height - 8)
+                pygame.draw.rect(surface, timer_bar_color, fill_rect)
+            
+            # Счет с контрастным фоном
+            score_bg = pygame.Surface((270, 35), pygame.SRCALPHA)
+            score_bg.fill((255, 255, 255, 240))
+            surface.blit(score_bg, (info_x, info_y + 160))
+            
+            score_text = font_medium.render(f"Score: {self.score}", True, BLACK)
+            surface.blit(score_text, (info_x + 10, info_y + 170))
             
             # Управление
-            controls_y = next_y + 220
+            controls_x = W - 280
+            controls_y = 120
+            
+            # Фон для управления
+            controls_bg = pygame.Surface((270, 220), pygame.SRCALPHA)
+            controls_bg.fill((0, 0, 0, 240))
+            surface.blit(controls_bg, (controls_x - 10, controls_y - 10))
+            
+            # Белая рамка
+            pygame.draw.rect(surface, WHITE, (controls_x - 10, controls_y - 10, 270, 220), 4)
+            
+            controls_title = font_medium.render("Controls:", True, NFACT_ORANGE)
+            # Тень для заголовка
+            title_shadow = font_medium.render("Controls:", True, BLACK)
+            surface.blit(title_shadow, (controls_x + 2, controls_y + 2))
+            surface.blit(controls_title, (controls_x, controls_y))
+            
             controls = [
                 "← → - Move",
-                "↓ - Soft Drop",
-                "↑ - Rotate",
-                "Space - Hard Drop",
+                "↓ - Speed up", 
+                "SPACE - Drop",
                 "P - Pause",
-                "R - Restart"
+                "R - Restart",
+                "",
+                "Goal: 3 lines",
+                "in 30 seconds!"
             ]
             
-            controls_title = font_medium.render("Controls:", True, WHITE)
-            surface.blit(controls_title, (next_x, controls_y))
-            
             for i, control in enumerate(controls):
-                control_surface = font_small.render(control, True, LIGHT_GRAY)
-                surface.blit(control_surface, (next_x, controls_y + 30 + i * 18))
+                if control == "":
+                    continue
+                    
+                # Контрастный фон для каждой строки
+                if control:
+                    text_bg = pygame.Surface((250, 25), pygame.SRCALPHA)
+                    text_bg.fill((255, 255, 255, 180))
+                    surface.blit(text_bg, (controls_x, controls_y + 35 + i * 22))
+                
+                color = NFACT_GREEN if "Goal" in control or "seconds" in control else BLACK
+                control_surface = font_small.render(control, True, color)
+                surface.blit(control_surface, (controls_x + 5, controls_y + 40 + i * 22))
     
-    def draw_champion_photo(surface, game_state):
-        """Отображение фото лучшей участницы с улучшенным дизайном"""
-        photo_x = W - 180
-        photo_y = H - 280
+    def draw_diana_showcase(surface, game_state):
+        """Красивая витрина с увеличенной фотографией Дианы"""
+        showcase_x = W - 250  # Сдвигаем левее
+        showcase_y = H - 300  # Увеличиваем размер
         
-        # Размеры фрейма
-        frame_width = 160
-        frame_height = 220
+        # Увеличенные размеры витрины
+        showcase_width = 220
+        showcase_height = 250
         
-        # Анимация пульсации для рамки
-        time_factor = pygame.time.get_ticks() * 0.003
-        pulse = math.sin(time_factor) * 0.2 + 1.0
-        glow_intensity = int(math.sin(time_factor * 2) * 30 + 50)
+        # Анимация
+        time_factor = pygame.time.get_ticks() * 0.004
+        pulse = math.sin(time_factor) * 0.15 + 1.0
         
-        # Многослойная рамка с градиентом
-        # Внешний светящийся контур
-        glow_size = int(8 * pulse)
-        for i in range(glow_size):
-            alpha = int((glow_size - i) * 15)
-            glow_color = (*GOLD, alpha)
-            glow_surface = pygame.Surface((frame_width + i*2, frame_height + i*2), pygame.SRCALPHA)
-            glow_surface.fill(glow_color)
-            surface.blit(glow_surface, (photo_x - glow_size + i, photo_y - glow_size + i))
+        # Многослойная рамка
+        for i in range(10):
+            offset = int(i * pulse)
+            frame_color = (255 - i*15, 192 - i*10, 203 - i*8) if i < 5 else PINK
+            frame_rect = pygame.Rect(showcase_x - 15 + offset, showcase_y - 15 + offset, 
+                                   showcase_width + 30 - offset*2, showcase_height + 30 - offset*2)
+            pygame.draw.rect(surface, frame_color, frame_rect, 3)
         
-        # Декоративная внешняя рамка с градиентом
-        outer_frame = pygame.Rect(photo_x - 8, photo_y - 8, frame_width + 16, frame_height + 16)
+        # Основная рамка
+        main_frame = pygame.Rect(showcase_x, showcase_y, showcase_width, showcase_height)
+        pygame.draw.rect(surface, BLACK, main_frame)
+        pygame.draw.rect(surface, PINK, main_frame, 6)
         
-        # Рисуем градиентную рамку
-        for i in range(8):
-            color_ratio = i / 8
-            r = int(GOLD[0] * color_ratio + NFACT_ORANGE[0] * (1 - color_ratio))
-            g = int(GOLD[1] * color_ratio + NFACT_ORANGE[1] * (1 - color_ratio))
-            b = int(GOLD[2] * color_ratio + NFACT_ORANGE[2] * (1 - color_ratio))
-            
-            frame_rect = pygame.Rect(photo_x - 8 + i, photo_y - 8 + i, 
-                                    frame_width + 16 - i*2, frame_height + 16 - i*2)
-            pygame.draw.rect(surface, (r, g, b), frame_rect, 1)
+        # Увеличенная фотография Дианы
+        try:
+            diana_display = pygame.transform.smoothscale(diana_photo, 
+                                                       (showcase_width - 20, int(showcase_height * 0.75)))
+        except:
+            diana_display = pygame.transform.scale(diana_block, 
+                                                 (showcase_width - 20, int(showcase_height * 0.75)))
+        surface.blit(diana_display, (showcase_x + 10, showcase_y + 10))
         
-        # Внутренняя темная рамка
-        inner_frame = pygame.Rect(photo_x - 2, photo_y - 2, frame_width + 4, frame_height + 4)
-        pygame.draw.rect(surface, DARK_BG, inner_frame)
-        pygame.draw.rect(surface, NFACT_BLUE, inner_frame, 2)
+        # Градиентный фон для текста
+        text_area_height = int(showcase_height * 0.25)
+        text_y = showcase_y + int(showcase_height * 0.75)
         
-        # Фото участницы (увеличенное)
-        diana_photo_large = pygame.transform.smoothscale(diana_photo, (frame_width, int(frame_height * 0.75)))
-        surface.blit(diana_photo_large, (photo_x, photo_y))
+        text_bg = pygame.Surface((showcase_width - 20, text_area_height))
+        for y in range(text_area_height):
+            ratio = y / text_area_height
+            r = int(PINK[0] * (1 - ratio) + BLACK[0] * ratio)
+            g = int(PINK[1] * (1 - ratio) + BLACK[1] * ratio)
+            b = int(PINK[2] * (1 - ratio) + BLACK[2] * ratio)
+            pygame.draw.line(text_bg, (r, g, b), (0, y), (showcase_width - 20, y))
         
-        # Красивый фон для текста с градиентом
-        text_bg_height = 80
-        text_bg_y = photo_y + int(frame_height * 0.75)
+        surface.blit(text_bg, (showcase_x + 10, text_y))
         
-        # Создаем градиентный фон для текста
-        text_bg_surface = pygame.Surface((frame_width, text_bg_height))
-        for y in range(text_bg_height):
-            ratio = y / text_bg_height
-            r = int(NFACT_BLUE[0] * (1 - ratio) + DARK_BG[0] * ratio)
-            g = int(NFACT_BLUE[1] * (1 - ratio) + DARK_BG[1] * ratio)
-            b = int(NFACT_BLUE[2] * (1 - ratio) + DARK_BG[2] * ratio)
-            pygame.draw.line(text_bg_surface, (r, g, b), (0, y), (frame_width, y))
+        # Разделительная линия
+        pygame.draw.line(surface, GOLD, (showcase_x + 10, text_y), (showcase_x + showcase_width - 10, text_y), 3)
         
-        surface.blit(text_bg_surface, (photo_x, text_bg_y))
-        
-        # Декоративная линия-разделитель
-        pygame.draw.line(surface, GOLD, (photo_x, text_bg_y), (photo_x + frame_width, text_bg_y), 2)
-        
-        # Текст с тенью и свечением
+        # Текст с тенями
         text_lines = [
-            ("Самая сильная", GOLD, font_medium),
-            ("участница", NFACT_GREEN, font_medium),
-            ("ТЕТРИС", NFACT_ORANGE, font_large)
+            ("DIANA", GOLD, font_large),
+            ("Queen of Tetris", PINK, font_medium)
         ]
         
-        current_y = text_bg_y + 10
-        
+        current_y = text_y + 15
         for text, color, font in text_lines:
-            # Тень текста
-            shadow_surface = font.render(text, True, BLACK)
-            shadow_rect = shadow_surface.get_rect(center=(photo_x + frame_width//2 + 2, current_y + 2))
-            surface.blit(shadow_surface, shadow_rect)
+            # Тень
+            text_shadow = font.render(text, True, BLACK)
+            text_shadow_rect = text_shadow.get_rect(center=(showcase_x + showcase_width//2 + 2, current_y + 2))
+            surface.blit(text_shadow, text_shadow_rect)
             
             # Основной текст
             text_surface = font.render(text, True, color)
-            text_rect = text_surface.get_rect(center=(photo_x + frame_width//2, current_y))
+            text_rect = text_surface.get_rect(center=(showcase_x + showcase_width//2, current_y))
             surface.blit(text_surface, text_rect)
-            
-            # Добавляем свечение для слова "ТЕТРИС"
-            if text == "ТЕТРИС":
-                for offset in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
-                    glow_surface = font.render(text, True, (*color, 100))
-                    glow_rect = glow_surface.get_rect(center=(photo_x + frame_width//2 + offset[0], 
-                                                             current_y + offset[1]))
-                    surface.blit(glow_surface, glow_rect)
-            
-            current_y += 20 if font == font_medium else 25
+            current_y += 30
         
-        # Декоративные элементы по углам
-        corner_size = 20
-        corner_positions = [
-            (photo_x - 10, photo_y - 10),  # Верхний левый
-            (photo_x + frame_width - 10, photo_y - 10),  # Верхний правый
-            (photo_x - 10, photo_y + frame_height - 10),  # Нижний левый
-            (photo_x + frame_width - 10, photo_y + frame_height - 10)  # Нижний правый
-        ]
-        
-        for i, (corner_x, corner_y) in enumerate(corner_positions):
-            # Анимированные звезды
-            rotation = (pygame.time.get_ticks() * 0.002 + i * math.pi/2) % (2 * math.pi)
-            
-            # Рисуем звезду
-            star_points = []
-            for j in range(8):  # 8-конечная звезда
-                angle = j * math.pi / 4 + rotation
-                if j % 2 == 0:
-                    radius = corner_size // 2
-                    color = GOLD
-                else:
-                    radius = corner_size // 4
-                    color = NFACT_ORANGE
+        # Эффекты при высоком прогрессе
+        if game_state.lines_cleared >= 1:
+            # Сердечки
+            for i in range(3):
+                heart_x = showcase_x + 30 + i * 50
+                heart_y = showcase_y - 40
+                heart_offset = math.sin(time_factor + i) * 8
                 
-                point_x = corner_x + math.cos(angle) * radius
-                point_y = corner_y + math.sin(angle) * radius
-                star_points.append((point_x, point_y))
-            
-            # Рисуем звезду с чередованием цветов
-            for j in range(0, len(star_points), 2):
-                if j + 2 < len(star_points):
-                    pygame.draw.polygon(surface, GOLD, [
-                        (corner_x, corner_y),
-                        star_points[j],
-                        star_points[j + 1]
-                    ])
+                heart_text = font_large.render("💖", True, PINK)
+                surface.blit(heart_text, (heart_x, heart_y + heart_offset))
         
-        # Специальные эффекты при высоком счете
-        if game_state.score > 500:
-            # Корона над фото
-            crown_y = photo_y - 35
-            crown_x = photo_x + frame_width // 2
-            
-            # Основа короны
-            crown_base = pygame.Rect(crown_x - 30, crown_y + 15, 60, 10)
-            pygame.draw.rect(surface, GOLD, crown_base)
-            
-            # Зубцы короны
-            crown_points = [
-                (crown_x - 25, crown_y + 15),
-                (crown_x - 20, crown_y),
-                (crown_x - 10, crown_y + 10),
-                (crown_x, crown_y - 5),
-                (crown_x + 10, crown_y + 10),
-                (crown_x + 20, crown_y),
-                (crown_x + 25, crown_y + 15)
-            ]
-            pygame.draw.polygon(surface, GOLD, crown_points)
-            
-            # Драгоценные камни на короне
-            gem_positions = [(crown_x - 15, crown_y + 8), (crown_x, crown_y + 3), (crown_x + 15, crown_y + 8)]
-            gem_colors = [NFACT_RED, NFACT_GREEN, NFACT_BLUE]
-            
-            for pos, color in zip(gem_positions, gem_colors):
-                pygame.draw.circle(surface, color, pos, 3)
-                pygame.draw.circle(surface, WHITE, pos, 3, 1)
+        if game_state.lines_cleared >= 2:
+            # Корона
+            crown_text = font_huge.render("👑", True, GOLD)
+            crown_rect = crown_text.get_rect(center=(showcase_x + showcase_width//2, showcase_y - 60))
+            surface.blit(crown_text, crown_rect)
         
-        if game_state.score > 1000:
-            # Текст "CHAMPION!" с анимацией
-            champion_text = font_large.render("CHAMPION!", True, NFACT_GREEN)
-            champion_y = photo_y - 60
-            
-            # Анимация подпрыгивания
-            bounce = math.sin(pygame.time.get_ticks() * 0.01) * 5
-            champion_rect = champion_text.get_rect(center=(photo_x + frame_width//2, champion_y + bounce))
-            
-            # Тень для текста
-            shadow_text = font_large.render("CHAMPION!", True, BLACK)
-            shadow_rect = shadow_text.get_rect(center=(photo_x + frame_width//2 + 2, champion_y + bounce + 2))
-            surface.blit(shadow_text, shadow_rect)
-            
-            surface.blit(champion_text, champion_rect)
-            
-            # Конфетти вокруг
-            for i in range(10):
-                confetti_x = photo_x + random.randint(-20, frame_width + 20)
-                confetti_y = photo_y + random.randint(-40, frame_height + 40)
-                confetti_color = random.choice([GOLD, NFACT_GREEN, NFACT_ORANGE, NFACT_BLUE])
+        if game_state.lines_cleared >= 3:
+            # Звезды вокруг
+            for i in range(8):
+                angle = i * math.pi / 4 + time_factor
+                star_x = showcase_x + showcase_width//2 + math.cos(angle) * 80
+                star_y = showcase_y + showcase_height//2 + math.sin(angle) * 60
                 
-                # Анимированное конфетти
-                offset = math.sin(pygame.time.get_ticks() * 0.01 + i) * 3
-                pygame.draw.rect(surface, confetti_color, 
-                               (confetti_x + offset, confetti_y, 4, 8))
-        
-        if game_state.score > 2000:
-            # Радуга вокруг фото
-            rainbow_colors = [
-                (255, 0, 0),    # Красный
-                (255, 127, 0),  # Оранжевый
-                (255, 255, 0),  # Желтый
-                (0, 255, 0),    # Зеленый
-                (0, 0, 255),    # Синий
-                (75, 0, 130),   # Индиго
-                (148, 0, 211)   # Фиолетовый
-            ]
-            
-            for i, color in enumerate(rainbow_colors):
-                rainbow_rect = pygame.Rect(photo_x - 15 - i*2, photo_y - 15 - i*2, 
-                                         frame_width + 30 + i*4, frame_height + 30 + i*4)
-                pygame.draw.rect(surface, color, rainbow_rect, 2)
-        
-        # Статистика рядом с фото
-        stats_x = photo_x - 120
-        stats_y = photo_y + 50
-        
-        # Фон для статистики
-        stats_bg = pygame.Surface((100, 120), pygame.SRCALPHA)
-        stats_bg.fill((0, 0, 0, 150))
-        surface.blit(stats_bg, (stats_x, stats_y))
-        
-        # Рамка для статистики
-        pygame.draw.rect(surface, NFACT_BLUE, (stats_x, stats_y, 100, 120), 2)
-        
-        # Заголовок статистики
-        stats_title = font_small.render("Достижения:", True, GOLD)
-        surface.blit(stats_title, (stats_x + 5, stats_y + 5))
-        
-        # Статистика
-        achievements = [
-            f"Очки: {game_state.score}",
-            f"Линии: {game_state.lines_cleared}",
-            f"Уровень: {game_state.level}",
-            f"Тетрисы: {game_state.tetrises}"
-        ]
-        
-        for i, achievement in enumerate(achievements):
-            color = NFACT_GREEN if i == 0 and game_state.score > 1000 else WHITE
-            ach_text = font_small.render(achievement, True, color)
-            surface.blit(ach_text, (stats_x + 5, stats_y + 25 + i * 18))
-        
-        # Специальные бейджи
-        badge_y = stats_y + 100
-        if game_state.score > 500:
-            badge_text = font_small.render("⭐ Новичок", True, GOLD)
-            surface.blit(badge_text, (stats_x + 5, badge_y))
-        if game_state.score > 1000:
-            badge_text = font_small.render("👑 Мастер", True, GOLD)
-            surface.blit(badge_text, (stats_x + 5, badge_y + 15))
-        if game_state.score > 2000:
-            badge_text = font_small.render("🏆 Легенда", True, GOLD)
-            surface.blit(badge_text, (stats_x + 5, badge_y + 30))
+                star_text = font_large.render("⭐", True, GOLD)
+                surface.blit(star_text, (star_x, star_y))
     
     # Инициализация
-    game_state = GameState()
+    game_state = DianaGameState()
     particle_system = ParticleSystem()
     
-    def draw_gradient_background(surface):
-        for y in range(H):
-            ratio = y / H
-            r = int(DARK_BG[0] * (1 - ratio) + NFACT_BLUE[0] * ratio * 0.1)
-            g = int(DARK_BG[1] * (1 - ratio) + NFACT_BLUE[1] * ratio * 0.1)
-            b = int(DARK_BG[2] * (1 - ratio) + NFACT_BLUE[2] * ratio * 0.2)
-            pygame.draw.line(surface, (r, g, b), (0, y), (W, y))
-    
     def draw_title(surface):
-        title_text = font_large.render("nFactorial Tetris", True, NFACT_BLUE)
-        subtitle_text = font_medium.render("Code Block Edition", True, NFACT_GREEN)
+        # Заголовок с эффектами
+        title_bg = pygame.Surface((W, 80), pygame.SRCALPHA)
+        title_bg.fill((0, 0, 0, 200))
+        surface.blit(title_bg, (0, 0))
         
-        surface.blit(logo, (W // 2 - 100, 10))
-        surface.blit(title_text, (W // 2 - 120, 10))
-        surface.blit(subtitle_text, (W // 2 - 80, 35))
+        # Логотип
+        surface.blit(logo, (W // 2 - 250, 20))
+        
+        # Заголовок
+        title_text = font_huge.render("DITRIS", True, PINK)
+        
+        
+        # Тень для заголовка
+        title_shadow = font_huge.render("DITRIS", True, BLACK)
+        surface.blit(title_shadow, (W // 2 - 98, 22))
+        surface.blit(title_text, (W // 2 - 100, 20))
+        
+        # Тень для подзаголовка
+        subtitle_shadow = font_large.render("Diana Tetris Edition", True, BLACK)
+        surface.blit(subtitle_shadow, (W // 2 - 122, 52))
+       
     
     # Главный игровой цикл
     running = True
@@ -752,7 +621,7 @@ def main(window):
                 if event.key == pygame.K_ESCAPE:
                     return True
                 
-                if not game_state.game_over:
+                if not game_state.game_over and not game_state.game_won:
                     if event.key == pygame.K_LEFT:
                         game_state.current_piece.move(-1, 0, game_state.grid)
                     elif event.key == pygame.K_RIGHT:
@@ -760,10 +629,8 @@ def main(window):
                     elif event.key == pygame.K_DOWN:
                         if game_state.current_piece.move(0, 1, game_state.grid):
                             game_state.score += 1
-                    elif event.key == pygame.K_UP:
-                        game_state.current_piece.rotate(game_state.grid)
                     elif event.key == pygame.K_SPACE:
-                        # Hard drop
+                        # Быстрый сброс
                         while game_state.current_piece.move(0, 1, game_state.grid):
                             game_state.score += 2
                         game_state.place_piece()
@@ -771,8 +638,8 @@ def main(window):
                         game_state.paused = not game_state.paused
                 
                 if event.key == pygame.K_r:
-                    # Restart
-                    game_state = GameState()
+                    # Перезапуск
+                    game_state = DianaGameState()
                     particle_system = ParticleSystem()
         
         # Обновление
@@ -780,15 +647,22 @@ def main(window):
         particle_system.update()
         
         # Отрисовка
-        draw_gradient_background(window)
+        # Фон аудитории
+        window.blit(classroom_bg, (0, 0))
+        
+        # Затемнение для лучшей видимости игрового поля
+        overlay = pygame.Surface((W, H), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 120))
+        window.blit(overlay, (0, 0))
+        
         draw_title(window)
-        draw_champion_photo(window, game_state)
+        draw_diana_showcase(window, game_state)
         
         # Игровое поле
         game_state.draw_grid(window)
         
         # Текущая фигура
-        if game_state.current_piece and not game_state.game_over:
+        if game_state.current_piece and not game_state.game_over and not game_state.game_won:
             game_state.current_piece.draw(window)
         
         # Интерфейс
@@ -797,57 +671,193 @@ def main(window):
         # Частицы
         particle_system.draw(window)
         
-        # Подсказка о клавише ESC
-        esc_hint = font_small.render("ESC - Вернуться в меню", True, WHITE)
-        # Создаем полупрозрачный фон для подсказки
-        hint_bg = pygame.Surface((200, 25), pygame.SRCALPHA)
-        hint_bg.fill((0, 0, 0, 128))
-        window.blit(hint_bg, (W - 210, H - 35))
-        window.blit(esc_hint, (W - 205, H - 30))
+        # Подсказка о клавише ESC с контрастным фоном
+        esc_hint = font_medium.render("ESC - Back to menu", True, WHITE)
+        hint_bg = pygame.Surface((esc_hint.get_width() + 20, 30), pygame.SRCALPHA)
+        hint_bg.fill((0, 0, 0, 200))
+        window.blit(hint_bg, (W - esc_hint.get_width() - 30, H - 40))
+        pygame.draw.rect(window, WHITE, (W - esc_hint.get_width() - 30, H - 40, esc_hint.get_width() + 20, 30), 2)
+        window.blit(esc_hint, (W - esc_hint.get_width() - 20, H - 35))
         
         # Пауза
         if game_state.paused:
             pause_overlay = pygame.Surface((W, H), pygame.SRCALPHA)
-            pause_overlay.fill((0, 0, 0, 150))
+            pause_overlay.fill((0, 0, 0, 200))
             window.blit(pause_overlay, (0, 0))
             
+            # Тень для текста паузы
+            pause_shadow = font_huge.render("PAUSED", True, BLACK)
             pause_text = font_huge.render("PAUSED", True, NFACT_ORANGE)
             pause_rect = pause_text.get_rect(center=(W // 2, H // 2))
+            window.blit(pause_shadow, (pause_rect.x + 3, pause_rect.y + 3))
             window.blit(pause_text, pause_rect)
             
-            resume_text = font_medium.render("Press P to resume", True, WHITE)
-            resume_rect = resume_text.get_rect(center=(W // 2, H // 2 + 50))
+            # Тень для инструкции
+            resume_shadow = font_large.render("Press P to continue", True, BLACK)
+            resume_text = font_large.render("Press P to continue", True, WHITE)
+            resume_rect = resume_text.get_rect(center=(W // 2, H // 2 + 60))
+            window.blit(resume_shadow, (resume_rect.x + 2, resume_rect.y + 2))
             window.blit(resume_text, resume_rect)
         
-        # Game Over
-        if game_state.game_over:
-            game_over_overlay = pygame.Surface((W, H), pygame.SRCALPHA)
-            game_over_overlay.fill((0, 0, 0, 180))
-            window.blit(game_over_overlay, (0, 0))
+        # Победа
+        if game_state.game_won:
+            victory_overlay = pygame.Surface((W, H), pygame.SRCALPHA)
+            victory_overlay.fill((0, 0, 0, 220))
+            window.blit(victory_overlay, (0, 0))
             
-            game_over_text = font_huge.render("GAME OVER", True, NFACT_RED)
-            game_over_rect = game_over_text.get_rect(center=(W // 2, H // 2 - 100))
-            window.blit(game_over_text, game_over_rect)
+            # Большая фотография Дианы для победы
+            try:
+                victory_diana = pygame.transform.smoothscale(diana_photo, (250, 300))
+            except:
+                victory_diana = pygame.transform.scale(diana_block, (250, 300))
             
-            final_score_text = font_large.render(f"Final Score: {game_state.score}", True, GOLD)
-            final_score_rect = final_score_text.get_rect(center=(W // 2, H // 2 - 50))
-            window.blit(final_score_text, final_score_rect)
+            diana_rect = victory_diana.get_rect(center=(W // 2, H // 2 - 120))
+            
+            # Рамка вокруг фото победы
+            frame_rect = pygame.Rect(diana_rect.x - 10, diana_rect.y - 10, diana_rect.width + 20, diana_rect.height + 20)
+            pygame.draw.rect(window, GOLD, frame_rect, 8)
+            window.blit(victory_diana, diana_rect)
+            
+            # Корона над Дианой
+            crown_text = font_huge.render("👑", True, GOLD)
+            crown_rect = crown_text.get_rect(center=(W // 2, H // 2 - 250))
+            window.blit(crown_text, crown_rect)
+            
+            # Текст победы с тенью
+            victory_shadow = font_huge.render("DIANA WINS!", True, BLACK)
+            victory_text = font_huge.render("DIANA WINS!", True, PINK)
+            victory_rect = victory_text.get_rect(center=(W // 2, H // 2 + 120))
+            window.blit(victory_shadow, (victory_rect.x + 3, victory_rect.y + 3))
+            window.blit(victory_text, victory_rect)
             
             stats_text = [
-                f"Lines Cleared: {game_state.lines_cleared}",
-                f"Level Reached: {game_state.level}",
-                f"Pieces Placed: {game_state.pieces_placed}",
-                f"Tetrises: {game_state.tetrises}"
+                f"3 lines cleared in {GAME_TIME - game_state.time_left} seconds!",
+                f"Final score: {game_state.score}",
+                "Diana -Queen of Tetris! 💖"
             ]
             
             for i, stat in enumerate(stats_text):
-                stat_surface = font_medium.render(stat, True, WHITE)
-                stat_rect = stat_surface.get_rect(center=(W // 2, H // 2 + i * 30))
+                color = GOLD if i == 2 else WHITE
+                # Тень для статистики
+                stat_shadow = font_large.render(stat, True, BLACK)
+                stat_surface = font_large.render(stat, True, color)
+                stat_rect = stat_surface.get_rect(center=(W // 2, H // 2 + 160 + i * 35))
+                window.blit(stat_shadow, (stat_rect.x + 2, stat_rect.y + 2))
                 window.blit(stat_surface, stat_rect)
             
-            restart_text = font_medium.render("Press R to restart or ESC to exit", True, LIGHT_GRAY)
-            restart_rect = restart_text.get_rect(center=(W // 2, H // 2 + 150))
+            # Инструкции с контрастным фоном
+            restart_text = font_large.render("R - play again | ESC - exit", True, WHITE)
+            restart_bg = pygame.Surface((restart_text.get_width() + 20, 40), pygame.SRCALPHA)
+            restart_bg.fill((0, 0, 0, 180))
+            restart_rect = restart_text.get_rect(center=(W // 2, H // 2 + 280))
+            window.blit(restart_bg, (restart_rect.x - 10, restart_rect.y - 5))
+            pygame.draw.rect(window, WHITE, (restart_rect.x - 10, restart_rect.y - 5, restart_text.get_width() + 20, 40), 2)
             window.blit(restart_text, restart_rect)
+            
+            # Конфетти вокруг Дианы
+            for i in range(20):
+                confetti_x = W // 2 + random.randint(-250, 250)
+                confetti_y = H // 2 + random.randint(-200, 200)
+                confetti_color = random.choice([PINK, GOLD, NFACT_GREEN, NFACT_ORANGE])
+                
+                offset = math.sin(pygame.time.get_ticks() * 0.01 + i) * 8
+                pygame.draw.rect(window, confetti_color, 
+                               (confetti_x + offset, confetti_y, 8, 15))
+        
+        # Поражение
+        if game_state.game_over and not game_state.game_won:
+            game_over_overlay = pygame.Surface((W, H), pygame.SRCALPHA)
+            game_over_overlay.fill((0, 0, 0, 220))
+            window.blit(game_over_overlay, (0, 0))
+            
+            # Грустная Диана
+            try:
+                sad_diana = pygame.transform.smoothscale(diana_photo, (200, 250))
+                # Применяем серый фильтр
+                gray_diana = pygame.Surface((200, 250), pygame.SRCALPHA)
+                gray_diana.blit(sad_diana, (0, 0))
+                gray_overlay = pygame.Surface((200, 250), pygame.SRCALPHA)
+                gray_overlay.fill((120, 120, 120, 120))
+                gray_diana.blit(gray_overlay, (0, 0))
+            except:
+                gray_diana = pygame.transform.scale(diana_block, (200, 250))
+            
+            diana_rect = gray_diana.get_rect(center=(W // 2, H // 2 - 100))
+            
+            # Рамка вокруг грустной Дианы
+            frame_rect = pygame.Rect(diana_rect.x - 8, diana_rect.y - 8, diana_rect.width + 16, diana_rect.height + 16)
+            pygame.draw.rect(window, LIGHT_GRAY, frame_rect, 6)
+            window.blit(gray_diana, diana_rect)
+            
+            # Текст поражения с тенью
+            game_over_shadow = font_huge.render("TIME'S UP!", True, BLACK)
+            game_over_text = font_huge.render("TIME'S UP!", True, NFACT_RED)
+            game_over_rect = game_over_text.get_rect(center=(W // 2, H // 2 + 100))
+            window.blit(game_over_shadow, (game_over_rect.x + 3, game_over_rect.y + 3))
+            window.blit(game_over_text, game_over_rect)
+            
+            # Результат с тенью
+            result_shadow = font_large.render(f"Lines cleared: {game_state.lines_cleared}/3", True, BLACK)
+            result_text = font_large.render(f"Lines cleared: {game_state.lines_cleared}/3", True, WHITE)
+            result_rect = result_text.get_rect(center=(W // 2, H // 2 + 150))
+            window.blit(result_shadow, (result_rect.x + 2, result_rect.y + 2))
+            window.blit(result_text, result_rect)
+            
+            # Ободряющий текст
+            if game_state.lines_cleared > 0:
+                encourage_msg = "Good result! Try again!"
+                encourage_color = NFACT_GREEN
+            else:
+                encourage_msg = "Diana believes in you! Try again!"
+                encourage_color = PINK
+            
+            encourage_shadow = font_large.render(encourage_msg, True, BLACK)
+            encourage_text = font_large.render(encourage_msg, True, encourage_color)
+            encourage_rect = encourage_text.get_rect(center=(W // 2, H // 2 + 190))
+            window.blit(encourage_shadow, (encourage_rect.x + 2, encourage_rect.y + 2))
+            window.blit(encourage_text, encourage_rect)
+            
+            # Инструкции с контрастным фоном
+            restart_text = font_large.render("R - try again | ESC - exit", True, WHITE)
+            restart_bg = pygame.Surface((restart_text.get_width() + 20, 40), pygame.SRCALPHA)
+            restart_bg.fill((0, 0, 0, 180))
+            restart_rect = restart_text.get_rect(center=(W // 2, H // 2 + 240))
+            window.blit(restart_bg, (restart_rect.x - 10, restart_rect.y - 5))
+            pygame.draw.rect(window, WHITE, (restart_rect.x - 10, restart_rect.y - 5, restart_text.get_width() + 20, 40), 2)
+            window.blit(restart_text, restart_rect)
+        
+        # Мигающее предупреждение при малом времени
+        if game_state.time_left <= 10 and game_state.time_left > 0 and not game_state.game_won and not game_state.paused:
+            if (pygame.time.get_ticks() // 500) % 2:  # Мигание каждые 0.5 сек
+                warning_text = font_huge.render(f"{game_state.time_left} SECONDS LEFT!", True, NFACT_RED)
+                warning_rect = warning_text.get_rect(center=(W // 2, 120))
+                
+                # Контрастный фон для предупреждения
+                warning_bg = pygame.Surface((warning_text.get_width() + 30, warning_text.get_height() + 20), pygame.SRCALPHA)
+                warning_bg.fill((255, 0, 0, 150))
+                window.blit(warning_bg, (warning_rect.x - 15, warning_rect.y - 10))
+                pygame.draw.rect(window, WHITE, (warning_rect.x - 15, warning_rect.y - 10, warning_text.get_width() + 30, warning_text.get_height() + 20), 4)
+                
+                # Тень для предупреждения
+                warning_shadow = font_huge.render(f"{game_state.time_left} SECONDS LEFT!", True, BLACK)
+                window.blit(warning_shadow, (warning_rect.x + 3, warning_rect.y + 3))
+                window.blit(warning_text, warning_rect)
+        
+        # Показываем цель игры в начале
+        if game_state.time_left > 25 and game_state.lines_cleared == 0 and not game_state.paused:
+            goal_text = font_large.render("Clear 3 lines in 30 seconds!", True, GOLD)
+            goal_rect = goal_text.get_rect(center=(W // 2, H - 80))
+            
+            # Контрастный фон для цели
+            goal_bg = pygame.Surface((goal_text.get_width() + 30, goal_text.get_height() + 20), pygame.SRCALPHA)
+            goal_bg.fill((0, 0, 0, 180))
+            window.blit(goal_bg, (goal_rect.x - 15, goal_rect.y - 10))
+            pygame.draw.rect(window, GOLD, (goal_rect.x - 15, goal_rect.y - 10, goal_text.get_width() + 30, goal_text.get_height() + 20), 3)
+            
+            # Тень для цели
+            goal_shadow = font_large.render("Goal: Clear 3 lines in 30 seconds with Diana!", True, BLACK)
+            window.blit(goal_shadow, (goal_rect.x + 2, goal_rect.y + 2))
+            window.blit(goal_text, goal_rect)
         
         pygame.display.flip()
         clock.tick(60)
